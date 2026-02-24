@@ -1,0 +1,4 @@
+interface:
+  display_name: "Planner Architect"
+  short_description: "Build roadmap, scope, and delivery plan"
+  default_prompt: "Use $planner-architect to produce an execution-ready sprint plan with backlog and DoD for this repository."

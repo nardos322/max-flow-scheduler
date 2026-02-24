@@ -1,0 +1,4 @@
+interface:
+  display_name: "Modeling Theory"
+  short_description: "Formalize and prove max-flow model"
+  default_prompt: "Use $modeling-theory to formalize constraints, prove correctness, and analyze complexity of the scheduling model."

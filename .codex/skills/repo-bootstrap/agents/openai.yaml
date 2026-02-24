@@ -1,0 +1,4 @@
+interface:
+  display_name: "Repo Bootstrap"
+  short_description: "Set monorepo structure and tooling"
+  default_prompt: "Use $repo-bootstrap to initialize or refactor this monorepo foundation with consistent scripts and CI baseline."

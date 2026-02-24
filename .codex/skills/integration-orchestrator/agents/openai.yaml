@@ -1,0 +1,4 @@
+interface:
+  display_name: "Integration Orchestrator"
+  short_description: "Align contracts across all modules"
+  default_prompt: "Use $integration-orchestrator to coordinate cross-module changes and prevent contract drift."

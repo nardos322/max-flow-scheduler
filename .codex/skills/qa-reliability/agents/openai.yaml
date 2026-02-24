@@ -1,0 +1,4 @@
+interface:
+  display_name: "QA Reliability"
+  short_description: "Own test strategy and release gates"
+  default_prompt: "Use $qa-reliability to define test coverage, CI quality gates, and release-readiness checks for this monorepo."

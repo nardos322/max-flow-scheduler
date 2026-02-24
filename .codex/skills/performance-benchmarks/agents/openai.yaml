@@ -1,0 +1,4 @@
+interface:
+  display_name: "Performance Benchmarks"
+  short_description: "Measure and enforce performance budgets"
+  default_prompt: "Use $performance-benchmarks to define scenarios, run benchmarks, and set performance budgets."

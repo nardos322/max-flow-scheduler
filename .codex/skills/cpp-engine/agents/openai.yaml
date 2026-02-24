@@ -1,0 +1,4 @@
+interface:
+  display_name: "C++ Engine"
+  short_description: "Implement and verify max-flow solver"
+  default_prompt: "Use $cpp-engine to implement or refactor the C++ max-flow scheduler and add robust tests."

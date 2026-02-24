@@ -1,0 +1,4 @@
+interface:
+  display_name: "Technical Writer"
+  short_description: "Maintain ADRs, runbooks, and guides"
+  default_prompt: "Use $technical-writer to write or update ADRs, runbooks, and technical guides for this repository."

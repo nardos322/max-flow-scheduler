@@ -1,0 +1,18 @@
+:root {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #f2f4f8;
+  color: #111827;
+}
+
+.container {
+  max-width: 880px;
+  margin: 48px auto;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  padding: 24px;
+}

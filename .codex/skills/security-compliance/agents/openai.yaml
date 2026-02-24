@@ -1,0 +1,4 @@
+interface:
+  display_name: "Security Compliance"
+  short_description: "Apply practical security guardrails"
+  default_prompt: "Use $security-compliance to review and improve security controls, secrets handling, and CI checks."

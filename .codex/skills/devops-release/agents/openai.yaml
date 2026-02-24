@@ -1,0 +1,4 @@
+interface:
+  display_name: "DevOps Release"
+  short_description: "Set CI/CD, Docker, and release ops"
+  default_prompt: "Use $devops-release to define CI/CD stages, container strategy, and release/rollback procedures."

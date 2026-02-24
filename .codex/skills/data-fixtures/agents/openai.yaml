@@ -1,0 +1,4 @@
+interface:
+  display_name: "Data Fixtures"
+  short_description: "Build deterministic test datasets"
+  default_prompt: "Use $data-fixtures to create or update deterministic fixtures for engine, API, and frontend tests."

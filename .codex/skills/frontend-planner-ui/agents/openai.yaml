@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontend Planner UI"
+  short_description: "Build robust planner workflows in React"
+  default_prompt: "Use $frontend-planner-ui to implement planner screens, validation UX, and tests for the scheduling flow."
