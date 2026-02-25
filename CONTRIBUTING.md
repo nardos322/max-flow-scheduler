@@ -15,6 +15,9 @@
 
 ## Workflow Git
 - Ver lineamientos completos en [docs/git-workflow.md](/home/nardos322/max-flow-scheduler/docs/git-workflow.md).
+- Releases: [docs/release-workflow.md](/home/nardos322/max-flow-scheduler/docs/release-workflow.md).
+- Hotfixes: [docs/hotfix-workflow.md](/home/nardos322/max-flow-scheduler/docs/hotfix-workflow.md).
+- Versionado de contratos: [docs/contract-versioning.md](/home/nardos322/max-flow-scheduler/docs/contract-versioning.md).
 
 ## Convenciones
 - TypeScript en modo estricto.
