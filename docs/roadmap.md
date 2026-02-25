@@ -26,6 +26,7 @@ Dejar el monorepo listo para desarrollo paralelo.
 - Base de testing (`vitest` para TS, `gtest` o `catch2` para C++).
 - CI inicial: lint + typecheck + tests.
 - Convenciones (`CONTRIBUTING.md`, `CODEOWNERS` opcional).
+- Setup base de UI en `apps/web`: Tailwind CSS, componentes UI reutilizables e iconos.
 
 ### DoD
 - `pnpm lint`, `pnpm test`, `pnpm typecheck` corren en limpio en local y CI.
@@ -38,6 +39,7 @@ Fijar el modelo de entrada/salida y reglas de negocio.
 - Modelo formal de red de flujo para el problema.
 - Esquemas Zod compartidos en `packages/domain`.
 - Contrato API inicial (`POST /schedule/solve`).
+- Extension de contrato para exponer `minCut` (valor y aristas de corte) de forma opcional/versionada.
 - Fixtures JSON de casos factibles e infactibles.
 
 ### DoD
@@ -51,12 +53,14 @@ Implementar solucionador robusto y testeado.
 - Implementacion Edmonds-Karp.
 - Constructor de grafo desde payload.
 - Mapeo de resultado a asignaciones por dia.
+- Calculo de corte minimo sobre la red residual final.
 - Binario CLI con IO JSON (`stdin`/`stdout`).
 - Pruebas unitarias y de regresion.
 
 ### DoD
 - Casos base pasan.
 - Casos infactibles retornan diagnostico legible.
+- Verificacion automatizada de igualdad `maxFlow == minCutValue` en fixtures conocidos.
 - Cobertura minima objetivo en modulo core >= 85%.
 
 ## Sprint 3 - API y orquestacion (1 semana)
@@ -67,6 +71,7 @@ Exponer el motor como servicio estable.
 - Endpoint `POST /schedule/solve` con validaciones Zod.
 - Integracion con `engine-client`.
 - Mapeo de errores de motor a respuestas HTTP consistentes.
+- Respuesta HTTP con bloque `minCut` opcional y consistente con contrato compartido.
 - Logging estructurado y request-id.
 - Tests de integracion API + motor.
 
@@ -81,6 +86,8 @@ Permitir planificar sprints con visualizacion de cobertura diaria.
 - Formularios de medicos, periodos y disponibilidad.
 - Configuracion de demanda diaria (`medicos requeridos por dia`).
 - Vista de resultado: asignaciones por dia y alertas de no factibilidad.
+- Estado de cliente con `Zustand` para flujo de formulario/UI.
+- Estado de servidor con `TanStack Query` para llamadas a API y estados `loading/error/success`.
 - Tests de componentes y flujo principal.
 
 ### DoD

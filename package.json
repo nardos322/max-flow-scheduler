@@ -4,12 +4,12 @@
   "version": "0.1.0",
   "packageManager": "pnpm@10.6.0",
   "scripts": {
-    "dev": "pnpm -r --parallel --filter ./apps/** run dev",
-    "build": "pnpm -r --filter ./apps/** --filter ./packages/** run build",
-    "lint": "pnpm -r --filter ./apps/** --filter ./packages/** run lint",
-    "test": "pnpm -r --filter ./apps/** --filter ./packages/** run test && pnpm test:engine-cpp",
-    "typecheck": "pnpm -r --filter ./apps/** --filter ./packages/** run typecheck",
-    "format": "pnpm -r --filter ./apps/** --filter ./packages/** run format",
+    "dev": "pnpm -r --parallel run dev --if-present",
+    "build": "pnpm -r run build",
+    "lint": "pnpm -r run lint",
+    "test": "pnpm -r run test && pnpm test:engine-cpp",
+    "typecheck": "pnpm -r run typecheck",
+    "format": "pnpm -r run format",
     "test:engine-cpp": "bash scripts/run-engine-tests.sh",
     "ci": "pnpm lint && pnpm typecheck && pnpm test"
   },

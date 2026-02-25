@@ -9,7 +9,7 @@
 ## Flujo
 1. Crear rama por feature.
 2. Implementar cambios con tests.
-3. Ejecutar `pnpm ci` antes de abrir PR.
+3. Ejecutar `pnpm run ci` antes de abrir PR.
 
 ## Convenciones
 - TypeScript en modo estricto.

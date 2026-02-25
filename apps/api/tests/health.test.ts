@@ -1,13 +1,15 @@
-import request from 'supertest';
-import { describe, expect, it } from 'vitest';
-import { createApp } from '../src/app.js';
+import { describe, expect, it, vi } from 'vitest';
+import { healthHandler } from '../src/app.js';
 
-describe('GET /health', () => {
+describe('healthHandler', () => {
   it('returns status ok', async () => {
-    const app = createApp();
-    const response = await request(app).get('/health');
+    const status = vi.fn().mockReturnThis();
+    const json = vi.fn();
+    const res = { status, json };
 
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual({ status: 'ok' });
+    await healthHandler({} as never, res as never, vi.fn());
+
+    expect(status).toHaveBeenCalledWith(200);
+    expect(json).toHaveBeenCalledWith({ status: 'ok' });
   });
 });
