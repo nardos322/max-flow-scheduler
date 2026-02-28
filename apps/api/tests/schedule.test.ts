@@ -1,16 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createSolveScheduleHandler } from '../src/app.js';
-import { EngineRunnerError } from '../src/engine-runner.js';
+import { EngineRunnerError } from '../src/services/engine-runner.service.js';
+import { createSolveScheduleController } from '../src/controllers/schedule.controller.js';
+import { validateSolveRequestMiddleware } from '../src/middlewares/validate-solve-request.middleware.js';
 
-describe('solveScheduleHandler', () => {
+describe('validateSolveRequestMiddleware', () => {
   it('rejects invalid payloads with field issues', async () => {
-    const status = vi.fn().mockReturnThis();
-    const json = vi.fn();
-    const res = { status, json };
+    const next = vi.fn();
+    const res = { locals: {} };
 
-    const solveScheduleHandler = createSolveScheduleHandler(vi.fn());
-
-    await solveScheduleHandler(
+    await validateSolveRequestMiddleware(
       {
         body: {
           doctors: [{ id: 'd1', maxTotalDays: 2 }],
@@ -19,23 +17,24 @@ describe('solveScheduleHandler', () => {
         },
       } as never,
       res as never,
-      vi.fn(),
+      next,
     );
 
-    expect(status).toHaveBeenCalledWith(400);
-    expect(json).toHaveBeenCalledWith(
+    expect(next).toHaveBeenCalledWith(
       expect.objectContaining({
-        error: 'Invalid schedule payload',
-        issues: expect.any(Array),
+        statusCode: 400,
       }),
     );
   });
+});
 
+describe('solveScheduleController', () => {
   it('returns the solver response for a valid payload', async () => {
     const status = vi.fn().mockReturnThis();
     const json = vi.fn();
-    const res = { status, json };
-    const solveScheduleHandler = createSolveScheduleHandler(async () => ({
+    const next = vi.fn();
+    const res = { status, json, locals: { solveRequest: {} } };
+    const solveScheduleController = createSolveScheduleController(async () => ({
       contractVersion: '1.0',
       isFeasible: true,
       assignedCount: 1,
@@ -43,18 +42,10 @@ describe('solveScheduleHandler', () => {
       assignments: [{ doctorId: 'd1', dayId: 'day-1', periodId: 'p1' }],
     }));
 
-    await solveScheduleHandler(
-      {
-        body: {
-          contractVersion: '1.0',
-          doctors: [{ id: 'd1', maxTotalDays: 2 }],
-          periods: [{ id: 'p1', dayIds: ['day-1'] }],
-          demands: [{ dayId: 'day-1', requiredDoctors: 1 }],
-          availability: [{ doctorId: 'd1', periodId: 'p1', dayId: 'day-1' }],
-        },
-      } as never,
+    await solveScheduleController(
+      {} as never,
       res as never,
-      vi.fn(),
+      next,
     );
 
     expect(status).toHaveBeenCalledWith(200);
@@ -65,34 +56,25 @@ describe('solveScheduleHandler', () => {
       uncoveredDays: [],
       assignments: [{ doctorId: 'd1', dayId: 'day-1', periodId: 'p1' }],
     });
+    expect(next).not.toHaveBeenCalled();
   });
 
-  it('maps engine client failures to 500 solver execution error', async () => {
+  it('forwards engine errors to error middleware', async () => {
     const status = vi.fn().mockReturnThis();
     const json = vi.fn();
-    const res = { status, json };
-    const solveScheduleHandler = createSolveScheduleHandler(async () => {
+    const next = vi.fn();
+    const res = { status, json, locals: { solveRequest: {} } };
+    const solveScheduleController = createSolveScheduleController(async () => {
       throw new EngineRunnerError('boom', 'EXIT_NON_ZERO');
     });
 
-    await solveScheduleHandler(
-      {
-        body: {
-          contractVersion: '1.0',
-          doctors: [{ id: 'd1', maxTotalDays: 2 }],
-          periods: [{ id: 'p1', dayIds: ['day-1'] }],
-          demands: [{ dayId: 'day-1', requiredDoctors: 1 }],
-          availability: [{ doctorId: 'd1', periodId: 'p1', dayId: 'day-1' }],
-        },
-      } as never,
+    await solveScheduleController(
+      {} as never,
       res as never,
-      vi.fn(),
+      next,
     );
 
-    expect(status).toHaveBeenCalledWith(500);
-    expect(json).toHaveBeenCalledWith({
-      error: 'Solver execution failed',
-      details: 'EXIT_NON_ZERO',
-    });
+    expect(next).toHaveBeenCalledWith(expect.any(EngineRunnerError));
+    expect(status).not.toHaveBeenCalled();
   });
 });
