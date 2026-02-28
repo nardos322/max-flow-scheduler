@@ -1,0 +1,80 @@
+{
+  "benchmark": "engine-smoke",
+  "generatedAt": "2026-02-28T14:23:19.333Z",
+  "engineBinary": "/home/nardos322/max-flow-scheduler/services/engine-cpp/build/scheduler_engine",
+  "runsPerScenario": 10,
+  "results": [
+    {
+      "scenario": "small-feasible-fixture",
+      "inputSize": {
+        "doctors": 2,
+        "periods": 1,
+        "days": 2,
+        "demands": 2,
+        "availability": 2
+      },
+      "metrics": {
+        "runs": 10,
+        "minMs": 2.631,
+        "maxMs": 18.855,
+        "avgMs": 6.73,
+        "p50Ms": 3.298,
+        "p95Ms": 18.855
+      }
+    },
+    {
+      "scenario": "small-infeasible-fixture",
+      "inputSize": {
+        "doctors": 1,
+        "periods": 1,
+        "days": 2,
+        "demands": 2,
+        "availability": 2
+      },
+      "metrics": {
+        "runs": 10,
+        "minMs": 2.421,
+        "maxMs": 34.04,
+        "avgMs": 6.817,
+        "p50Ms": 2.677,
+        "p95Ms": 34.04
+      }
+    },
+    {
+      "scenario": "medium-dense-feasible",
+      "inputSize": {
+        "doctors": 12,
+        "periods": 3,
+        "days": 15,
+        "demands": 15,
+        "availability": 180
+      },
+      "metrics": {
+        "runs": 10,
+        "minMs": 4.945,
+        "maxMs": 31.542,
+        "avgMs": 10.4,
+        "p50Ms": 5.191,
+        "p95Ms": 31.542
+      }
+    },
+    {
+      "scenario": "large-dense-feasible",
+      "inputSize": {
+        "doctors": 20,
+        "periods": 4,
+        "days": 24,
+        "demands": 24,
+        "availability": 480
+      },
+      "metrics": {
+        "runs": 10,
+        "minMs": 8.873,
+        "maxMs": 10.502,
+        "avgMs": 9.572,
+        "p50Ms": 9.347,
+        "p95Ms": 10.502
+      }
+    }
+  ]
+}
