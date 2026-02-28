@@ -79,7 +79,7 @@ _Ultima actualizacion manual: 2026-02-28 (alineado con evidencia en codigo/repos
 ### US-402 Errores y observabilidad (P1, 5)
 - T-402.1 Mapa de errores 400/422/500. Owner: `api-contracts`. Estado: `done`
 - T-402.2 Logging estructurado + requestId. Owner: `devops-release`. Estado: `done`
-- T-402.3 Tests integracion API-engine. Owner: `qa-reliability`. Estado: `todo`
+- T-402.3 Tests integracion API-engine. Owner: `qa-reliability`. Estado: `done`
 - Done cuando:
   - Errores consistentes y trazables
 
