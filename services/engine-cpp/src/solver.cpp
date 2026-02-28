@@ -1,183 +1,23 @@
 #include "solver.hpp"
+
 #include <algorithm>
-#include <limits>
-#include <queue>
+#include <exception>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
-
 #include <vector>
 
-#include <nlohmann/json.hpp>
+#include "flow_network.hpp"
+#include "problem_input.hpp"
 
 namespace scheduler {
-namespace {
-
-using nlohmann::json;
-
-struct Doctor {
-  std::string id;
-  int max_total_days = 0;
-};
-
-struct Period {
-  std::string id;
-  std::vector<std::string> day_ids;
-};
-
-struct Demand {
-  std::string day_id;
-  int required_doctors = 0;
-};
-
-struct Availability {
-  std::string doctor_id;
-  std::string period_id;
-  std::string day_id;
-};
-
-struct ProblemInput {
-  std::string contract_version = "1.0";
-  std::vector<Doctor> doctors;
-  std::vector<Period> periods;
-  std::vector<Demand> demands;
-  std::vector<Availability> availability;
-};
-
-ProblemInput DecodeInput(const std::string& input_json) {
-  const json root = json::parse(input_json);
-  ProblemInput problem;
-
-  if (root.contains("contractVersion") && root["contractVersion"].is_string()) {
-    problem.contract_version = root["contractVersion"].get<std::string>();
-  }
-
-  const json& doctors = root.at("doctors");
-  for (const auto& doctor : doctors) {
-    problem.doctors.push_back(Doctor{
-        doctor.at("id").get<std::string>(),
-        doctor.at("maxTotalDays").get<int>(),
-    });
-  }
-
-  const json& periods = root.at("periods");
-  for (const auto& period : periods) {
-    problem.periods.push_back(Period{
-        period.at("id").get<std::string>(),
-        period.at("dayIds").get<std::vector<std::string>>(),
-    });
-  }
-
-  const json& demands = root.at("demands");
-  for (const auto& demand : demands) {
-    problem.demands.push_back(Demand{
-        demand.at("dayId").get<std::string>(),
-        demand.at("requiredDoctors").get<int>(),
-    });
-  }
-
-  const json& availability = root.at("availability");
-  for (const auto& item : availability) {
-    problem.availability.push_back(Availability{
-        item.at("doctorId").get<std::string>(),
-        item.at("periodId").get<std::string>(),
-        item.at("dayId").get<std::string>(),
-    });
-  }
-
-  return problem;
-}
-
-struct Edge {
-  int to;
-  int rev;
-  int capacity;
-  int original_capacity;
-};
-
-class FlowNetwork {
- public:
-  explicit FlowNetwork(int node_count) : adjacency_(node_count) {}
-
-  int AddEdge(int from, int to, int capacity) {
-    Edge forward{to, static_cast<int>(adjacency_[to].size()), capacity, capacity};
-    Edge backward{from, static_cast<int>(adjacency_[from].size()), 0, 0};
-    adjacency_[from].push_back(forward);
-    adjacency_[to].push_back(backward);
-    return static_cast<int>(adjacency_[from].size()) - 1;
-  }
-
-  int MaxFlow(int source, int sink) {
-    int total_flow = 0;
-
-    while (true) {
-      std::vector<int> parent_node(adjacency_.size(), -1);
-      std::vector<int> parent_edge(adjacency_.size(), -1);
-      std::queue<int> bfs_queue;
-
-      parent_node[source] = source;
-      bfs_queue.push(source);
-
-      while (!bfs_queue.empty() && parent_node[sink] == -1) {
-        int current = bfs_queue.front();
-        bfs_queue.pop();
-
-        for (int edge_index = 0; edge_index < static_cast<int>(adjacency_[current].size()); ++edge_index) {
-          const Edge& edge = adjacency_[current][edge_index];
-          if (parent_node[edge.to] != -1 || edge.capacity <= 0) {
-            continue;
-          }
-
-          parent_node[edge.to] = current;
-          parent_edge[edge.to] = edge_index;
-          bfs_queue.push(edge.to);
-
-          if (edge.to == sink) {
-            break;
-          }
-        }
-      }
-
-      if (parent_node[sink] == -1) {
-        break;
-      }
-
-      int path_flow = std::numeric_limits<int>::max();
-      for (int node = sink; node != source; node = parent_node[node]) {
-        const int prev = parent_node[node];
-        const int edge_index = parent_edge[node];
-        path_flow = std::min(path_flow, adjacency_[prev][edge_index].capacity);
-      }
-
-      for (int node = sink; node != source; node = parent_node[node]) {
-        const int prev = parent_node[node];
-        const int edge_index = parent_edge[node];
-        Edge& forward = adjacency_[prev][edge_index];
-        Edge& backward = adjacency_[node][forward.rev];
-        forward.capacity -= path_flow;
-        backward.capacity += path_flow;
-      }
-
-      total_flow += path_flow;
-    }
-
-    return total_flow;
-  }
-
-  const Edge& GetEdge(int from, int edge_index) const { return adjacency_[from][edge_index]; }
-
- private:
-  std::vector<std::vector<Edge>> adjacency_;
-};
-
-}  // namespace
 
 SolveResult Solve(const std::string& input_json) {
   SolveResult fallback{false, 0, {}, {}, "1.0"};
 
   ProblemInput input;
   try {
-    input = DecodeInput(input_json);
+    input = ParseProblemInput(input_json);
   } catch (const std::exception&) {
     return fallback;
   }
