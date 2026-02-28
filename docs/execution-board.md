@@ -72,7 +72,7 @@ _Ultima actualizacion manual: 2026-02-28 (alineado con evidencia en codigo/repos
 ### US-401 Endpoint solve (P0, 8)
 - T-401.1 Implementar `POST /schedule/solve`. Owner: `api-contracts`. Estado: `done`
 - T-401.2 Validacion request/response con Zod. Owner: `api-contracts`. Estado: `done`
-- T-401.3 Integrar invocacion de binario C++. Owner: `integration-orchestrator`. Estado: `todo`
+- T-401.3 Integrar invocacion de binario C++. Owner: `integration-orchestrator`. Estado: `done`
 - Done cuando:
   - Endpoint responde contrato v1
 
