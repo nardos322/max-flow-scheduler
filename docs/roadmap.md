@@ -93,7 +93,29 @@ Permitir planificar sprints con visualizacion de cobertura diaria.
 ### DoD
 - Usuario puede cargar un caso completo y obtener un resultado interpretable.
 
-## Sprint 5 - Hardening y release (1 semana)
+## Sprint 5 - Operacion de planificacion (1-2 semanas)
+### Objetivo
+Pasar de demo tecnica a flujo operativo real de planificacion de sprint.
+
+### Entregables
+- Modelo de `Sprint` planificable (periodo objetivo, estado, metadata).
+- Configuracion global por sprint:
+  - medicos requeridos por guardia (default global y/o override por dia),
+  - maximo de dias trabajables por medico en ese sprint.
+- Carga de medicos del sprint y asignacion de reglas globales.
+- Flujo de disponibilidad:
+  - autogestion por medico,
+  - override/manual por planificador cuando falte carga.
+- Validaciones de completitud del escenario (ready-to-solve).
+- Ejecucion del solver por sprint con snapshot de input y resultado.
+- Persistencia minima de escenario y resultado para trazabilidad.
+
+### DoD
+- Planificador puede crear sprint, configurar reglas, completar disponibilidad y ejecutar solver.
+- El sistema distingue claramente entre datos faltantes y escenario listo para resolver.
+- Cada corrida queda trazable por sprint y fecha.
+
+## Sprint 6 - Hardening y release (1 semana)
 ### Objetivo
 Cerrar riesgos de operacion y rendimiento.
 
