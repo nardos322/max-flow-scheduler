@@ -1,4 +1,4 @@
-# Tablero de Ejecucion (8 semanas)
+# Tablero de Ejecucion (9 semanas)
 
 _Ultima actualizacion manual: 2026-02-28 (alineado con evidencia en codigo/repositorio)._
 
@@ -85,9 +85,9 @@ _Ultima actualizacion manual: 2026-02-28 (alineado con evidencia en codigo/repos
 
 ## EPIC E5 - Frontend MVP (Semana 7)
 ### US-501 Editor de escenario (P0, 8)
-- T-501.1 UI medicos, periodos, disponibilidad. Owner: `frontend-planner-ui`. Estado: `todo`
+- T-501.1 UI medicos, periodos, disponibilidad. Owner: `frontend-planner-ui`. Estado: `done`
 - T-501.2 Campo de demanda diaria `requiredDoctors`. Owner: `frontend-planner-ui`. Estado: `done`
-- T-501.3 Validacion con schemas compartidos. Owner: `frontend-planner-ui`. Estado: `todo`
+- T-501.3 Validacion con schemas compartidos. Owner: `frontend-planner-ui`. Estado: `done`
 - Done cuando:
   - Formulario bloquea datos invalidos
 
@@ -98,7 +98,29 @@ _Ultima actualizacion manual: 2026-02-28 (alineado con evidencia en codigo/repos
 - Done cuando:
   - Flujo end-to-end MVP operativo
 
-## EPIC E6 - Hardening y Release (Semana 8)
+## EPIC E5.5 - Operacion de Planificacion (Semanas 7-8)
+### US-551 Sprint y reglas globales (P0, 8)
+- T-551.1 Crear entidad `Sprint` y estado de planificacion. Owner: `planner-architect`. Estado: `todo`
+- T-551.2 Configurar reglas globales (`requiredDoctors`, maximo por medico). Owner: `api-contracts`. Estado: `todo`
+- T-551.3 Persistir configuracion de sprint en API. Owner: `integration-orchestrator`. Estado: `todo`
+- Done cuando:
+  - Existe sprint planificable con configuracion global persistida
+
+### US-552 Disponibilidad por medico y override planificador (P0, 8)
+- T-552.1 Flujo de autogestion de disponibilidad por medico. Owner: `frontend-planner-ui`. Estado: `todo`
+- T-552.2 Override manual por planificador cuando falte carga. Owner: `frontend-planner-ui`. Estado: `todo`
+- T-552.3 Validar permisos/roles en API para carga de disponibilidad. Owner: `security-compliance`. Estado: `todo`
+- Done cuando:
+  - Disponibilidad puede cargarse por medico o por planificador de forma trazable
+
+### US-553 Ready-to-solve y trazabilidad de corridas (P0, 5)
+- T-553.1 Validar estado `ready-to-solve` antes de ejecutar. Owner: `api-contracts`. Estado: `todo`
+- T-553.2 Guardar snapshot de input/output por corrida. Owner: `integration-orchestrator`. Estado: `todo`
+- T-553.3 Exponer historial de corridas por sprint. Owner: `frontend-planner-ui`. Estado: `todo`
+- Done cuando:
+  - Cada corrida queda registrada y consultable por sprint
+
+## EPIC E6 - Hardening y Release (Semana 9)
 ### US-601 Seguridad baseline (P1, 5)
 - T-601.1 Headers, rate-limit, body limits, sanitizacion de errores. Owner: `security-compliance`. Estado: `todo`
 - T-601.2 Secret scanning y politica de secretos. Owner: `security-compliance`. Estado: `todo`
@@ -123,7 +145,8 @@ _Ultima actualizacion manual: 2026-02-28 (alineado con evidencia en codigo/repos
 2. E2 -> E3/E4/E5 (contratos bloquean engine/api/web)
 3. E3 -> E4 (API depende del solver)
 4. E4 -> E5 (UI depende de endpoint estable)
-5. E5 + E6 -> release final
+5. E5 -> E5.5 (flujo MVP antes de operacion multiusuario)
+6. E5.5 + E6 -> release final
 
 ## Cadencia recomendada
 - Daily: actualizar estado de tareas y bloqueos.
