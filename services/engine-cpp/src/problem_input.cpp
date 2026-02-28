@@ -1,4 +1,4 @@
-#include "problem_input.hpp"
+#include <scheduler/problem_input.hpp>
 
 #include <nlohmann/json.hpp>
 

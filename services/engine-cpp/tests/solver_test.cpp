@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <string>
 #include <unordered_set>
-#include "solver.hpp"
+#include <scheduler/solver.hpp>
 
 namespace {
 

@@ -11,9 +11,11 @@ add_library(solver_lib
   src/flow_network.cpp
   src/problem_input.cpp
 )
-target_include_directories(solver_lib PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}/src
-  ${CMAKE_CURRENT_SOURCE_DIR}/third_party
+target_include_directories(solver_lib
+  PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party
 )
 
 add_executable(scheduler_engine src/main.cpp)

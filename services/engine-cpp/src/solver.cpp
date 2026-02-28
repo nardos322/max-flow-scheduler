@@ -1,4 +1,4 @@
-#include "solver.hpp"
+#include <scheduler/solver.hpp>
 
 #include <algorithm>
 #include <exception>
@@ -7,8 +7,8 @@
 #include <unordered_set>
 #include <vector>
 
-#include "flow_network.hpp"
-#include "problem_input.hpp"
+#include <scheduler/flow_network.hpp>
+#include <scheduler/problem_input.hpp>
 
 namespace scheduler {
 

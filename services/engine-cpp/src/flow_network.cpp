@@ -1,4 +1,4 @@
-#include "flow_network.hpp"
+#include <scheduler/flow_network.hpp>
 
 #include <algorithm>
 #include <limits>

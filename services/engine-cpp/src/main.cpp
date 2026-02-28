@@ -1,7 +1,7 @@
 #include <iostream>
 #include <sstream>
 #include <nlohmann/json.hpp>
-#include "solver.hpp"
+#include <scheduler/solver.hpp>
 
 int main() {
   std::stringstream buffer;
