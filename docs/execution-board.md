@@ -85,9 +85,9 @@ _Ultima actualizacion manual: 2026-02-28 (alineado con evidencia en codigo/repos
 
 ## EPIC E5 - Frontend MVP (Semana 7)
 ### US-501 Editor de escenario (P0, 8)
-- T-501.1 UI medicos, periodos, disponibilidad. Owner: `frontend-planner-ui`. Estado: `todo`
+- T-501.1 UI medicos, periodos, disponibilidad. Owner: `frontend-planner-ui`. Estado: `done`
 - T-501.2 Campo de demanda diaria `requiredDoctors`. Owner: `frontend-planner-ui`. Estado: `done`
-- T-501.3 Validacion con schemas compartidos. Owner: `frontend-planner-ui`. Estado: `todo`
+- T-501.3 Validacion con schemas compartidos. Owner: `frontend-planner-ui`. Estado: `done`
 - Done cuando:
   - Formulario bloquea datos invalidos
 
