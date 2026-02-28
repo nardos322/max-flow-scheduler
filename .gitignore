@@ -10,3 +10,6 @@ build
 .env.*
 apps/*/dist
 services/engine-cpp/build
+services/engine-cpp/build-fetch
+.cache/
+compile_commands.json

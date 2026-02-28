@@ -1,5 +1,7 @@
 # Tablero de Ejecucion (8 semanas)
 
+_Ultima actualizacion manual: 2026-02-28 (alineado con evidencia en codigo/repositorio)._
+
 ## Convenciones
 - Estados: `todo`, `in-progress`, `blocked`, `done`
 - Prioridad: `P0` (critico), `P1` (alta), `P2` (media)
@@ -16,66 +18,66 @@
   - Riesgos principales documentados
 
 ### US-102 Bootstrap monorepo (P0, 8)
-- T-102.1 Crear estructura `apps/`, `packages/`, `services/`, `infra/`. Owner: `repo-bootstrap`. Estado: `todo`
-- T-102.2 Configurar workspace package manager. Owner: `repo-bootstrap`. Estado: `todo`
-- T-102.3 Configurar TS strict, ESLint, Prettier. Owner: `repo-bootstrap`. Estado: `todo`
-- T-102.4 Configurar CMake/CTest base. Owner: `repo-bootstrap`. Estado: `todo`
+- T-102.1 Crear estructura `apps/`, `packages/`, `services/`, `infra/`. Owner: `repo-bootstrap`. Estado: `done`
+- T-102.2 Configurar workspace package manager. Owner: `repo-bootstrap`. Estado: `done`
+- T-102.3 Configurar TS strict, ESLint, Prettier. Owner: `repo-bootstrap`. Estado: `done`
+- T-102.4 Configurar CMake/CTest base. Owner: `repo-bootstrap`. Estado: `done`
 - Done cuando:
   - Comandos raiz existen (`lint`, `test`, `build`, `typecheck`)
   - Tooling corre local
 
 ### US-103 CI baseline (P0, 5)
-- T-103.1 Pipeline lint/typecheck/test. Owner: `devops-release`. Estado: `todo`
-- T-103.2 Definir gates minimos. Owner: `qa-reliability`. Estado: `todo`
+- T-103.1 Pipeline lint/typecheck/test. Owner: `devops-release`. Estado: `done`
+- T-103.2 Definir gates minimos. Owner: `qa-reliability`. Estado: `done`
 - Done cuando:
   - CI verde en rama principal
 
 ## EPIC E2 - Dominio y Contratos (Semana 3)
 ### US-201 Contratos Zod compartidos (P0, 8)
-- T-201.1 Crear `packages/domain` con schemas request/response solver. Owner: `api-contracts`. Estado: `todo`
-- T-201.2 Versionar contrato v1. Owner: `api-contracts`. Estado: `todo`
-- T-201.3 Validar compatibilidad multi-modulo. Owner: `integration-orchestrator`. Estado: `todo`
+- T-201.1 Crear `packages/domain` con schemas request/response solver. Owner: `api-contracts`. Estado: `done`
+- T-201.2 Versionar contrato v1. Owner: `api-contracts`. Estado: `done`
+- T-201.3 Validar compatibilidad multi-modulo. Owner: `integration-orchestrator`. Estado: `in-progress`
 - Done cuando:
   - Contrato publicado y consumible por API/web
 
 ### US-202 Fixtures base (P1, 5)
-- T-202.1 Crear fixtures happy/edge/invalid. Owner: `data-fixtures`. Estado: `todo`
+- T-202.1 Crear fixtures happy/edge/invalid. Owner: `data-fixtures`. Estado: `in-progress`
 - T-202.2 Definir expected outcomes por fixture. Owner: `qa-reliability`. Estado: `todo`
 - Done cuando:
   - Fixtures usados en al menos 2 suites (engine y API)
 
 ## EPIC E3 - Solver C++ (Semanas 4-5)
 ### US-301 Implementar red de flujo (P0, 8)
-- T-301.1 Mapear nodos/aristas/capacidades desde input. Owner: `cpp-engine`. Estado: `todo`
-- T-301.2 Validar restricciones (`C_i`, por periodo, disponibilidad, `R_d`). Owner: `cpp-engine`. Estado: `todo`
+- T-301.1 Mapear nodos/aristas/capacidades desde input. Owner: `cpp-engine`. Estado: `done`
+- T-301.2 Validar restricciones (`C_i`, por periodo, disponibilidad, `R_d`). Owner: `cpp-engine`. Estado: `done`
 - T-301.3 Revisar formalmente el modelo implementado. Owner: `modeling-theory`. Estado: `todo`
 - Done cuando:
   - Constructor de red cubierto por unit tests
 
 ### US-302 Edmonds-Karp + extraccion (P0, 8)
-- T-302.1 Implementar algoritmo y residual graph. Owner: `cpp-engine`. Estado: `todo`
-- T-302.2 Extraer asignaciones por dia desde flujo. Owner: `cpp-engine`. Estado: `todo`
-- T-302.3 Exponer CLI JSON (stdin/stdout). Owner: `cpp-engine`. Estado: `todo`
+- T-302.1 Implementar algoritmo y residual graph. Owner: `cpp-engine`. Estado: `done`
+- T-302.2 Extraer asignaciones por dia desde flujo. Owner: `cpp-engine`. Estado: `done`
+- T-302.3 Exponer CLI JSON (stdin/stdout). Owner: `cpp-engine`. Estado: `done`
 - Done cuando:
   - Salida JSON estable para escenarios factibles/infactibles
 
 ### US-303 Calidad motor (P0, 5)
-- T-303.1 Unit tests + regresion + edge cases. Owner: `qa-reliability`. Estado: `todo`
-- T-303.2 Smoke benchmark inicial. Owner: `performance-benchmarks`. Estado: `todo`
+- T-303.1 Unit tests + regresion + edge cases. Owner: `qa-reliability`. Estado: `done`
+- T-303.2 Smoke benchmark inicial. Owner: `performance-benchmarks`. Estado: `done`
 - Done cuando:
   - Suite motor en verde
   - Baseline de performance publicado
 
 ## EPIC E4 - API Integrada (Semana 6)
 ### US-401 Endpoint solve (P0, 8)
-- T-401.1 Implementar `POST /schedule/solve`. Owner: `api-contracts`. Estado: `todo`
-- T-401.2 Validacion request/response con Zod. Owner: `api-contracts`. Estado: `todo`
+- T-401.1 Implementar `POST /schedule/solve`. Owner: `api-contracts`. Estado: `done`
+- T-401.2 Validacion request/response con Zod. Owner: `api-contracts`. Estado: `done`
 - T-401.3 Integrar invocacion de binario C++. Owner: `integration-orchestrator`. Estado: `todo`
 - Done cuando:
   - Endpoint responde contrato v1
 
 ### US-402 Errores y observabilidad (P1, 5)
-- T-402.1 Mapa de errores 400/422/500. Owner: `api-contracts`. Estado: `todo`
+- T-402.1 Mapa de errores 400/422/500. Owner: `api-contracts`. Estado: `in-progress`
 - T-402.2 Logging estructurado + requestId. Owner: `devops-release`. Estado: `todo`
 - T-402.3 Tests integracion API-engine. Owner: `qa-reliability`. Estado: `todo`
 - Done cuando:
@@ -84,7 +86,7 @@
 ## EPIC E5 - Frontend MVP (Semana 7)
 ### US-501 Editor de escenario (P0, 8)
 - T-501.1 UI medicos, periodos, disponibilidad. Owner: `frontend-planner-ui`. Estado: `todo`
-- T-501.2 Campo de demanda diaria `requiredDoctors`. Owner: `frontend-planner-ui`. Estado: `todo`
+- T-501.2 Campo de demanda diaria `requiredDoctors`. Owner: `frontend-planner-ui`. Estado: `done`
 - T-501.3 Validacion con schemas compartidos. Owner: `frontend-planner-ui`. Estado: `todo`
 - Done cuando:
   - Formulario bloquea datos invalidos
