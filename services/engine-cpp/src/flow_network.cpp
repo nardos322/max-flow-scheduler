@@ -1,5 +1,4 @@
 #include <scheduler/flow_network.hpp>
-
 #include <algorithm>
 #include <limits>
 #include <queue>

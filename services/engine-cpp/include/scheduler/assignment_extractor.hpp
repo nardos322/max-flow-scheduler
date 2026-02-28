@@ -1,7 +1,5 @@
 #pragma once
-
 #include <vector>
-
 #include <scheduler/flow_network.hpp>
 #include <scheduler/graph_builder.hpp>
 #include <scheduler/solver.hpp>

@@ -1,5 +1,4 @@
 #include <scheduler/problem_input.hpp>
-
 #include <nlohmann/json.hpp>
 
 namespace scheduler {
