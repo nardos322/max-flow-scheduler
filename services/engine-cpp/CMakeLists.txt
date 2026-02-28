@@ -10,6 +10,8 @@ add_library(solver_lib
   src/solver.cpp
   src/flow_network.cpp
   src/problem_input.cpp
+  src/graph_builder.cpp
+  src/assignment_extractor.cpp
 )
 target_include_directories(solver_lib
   PUBLIC
