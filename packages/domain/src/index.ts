@@ -167,6 +167,61 @@ export const sprintDoctorSchema = z.object({
   maxTotalDaysOverride: z.number().int().positive().optional(),
 });
 
+export const userRoleSchema = z.enum(['doctor', 'planner']);
+
+export const sprintAvailabilitySourceSchema = z.enum(['doctor-self-service', 'planner-override']);
+
+export const sprintAvailabilityEntrySchema = z.object({
+  doctorId: z.string().min(1),
+  periodId: z.string().min(1),
+  dayId: z.string().min(1),
+  source: sprintAvailabilitySourceSchema,
+  updatedByUserId: z.string().min(1),
+  updatedByRole: userRoleSchema,
+  updatedAt: z.string().datetime(),
+});
+
+export const availabilityDaySchema = z.object({
+  periodId: z.string().min(1),
+  dayId: z.string().min(1),
+});
+
+function ensureUniqueAvailabilityDays(
+  days: Array<{ periodId: string; dayId: string }>,
+  ctx: z.RefinementCtx,
+  pathPrefix: string,
+) {
+  const keys = new Set<string>();
+  days.forEach((entry, index) => {
+    const key = `${entry.periodId}::${entry.dayId}`;
+    if (keys.has(key)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [pathPrefix, index],
+        message: `Duplicate availability day '${key}'.`,
+      });
+    }
+    keys.add(key);
+  });
+}
+
+export const setDoctorAvailabilityRequestSchema = z
+  .object({
+    availability: z.array(availabilityDaySchema),
+  })
+  .superRefine((value, ctx) => {
+    ensureUniqueAvailabilityDays(value.availability, ctx, 'availability');
+  });
+
+export const plannerOverrideAvailabilityRequestSchema = z
+  .object({
+    doctorId: z.string().min(1),
+    availability: z.array(availabilityDaySchema),
+  })
+  .superRefine((value, ctx) => {
+    ensureUniqueAvailabilityDays(value.availability, ctx, 'availability');
+  });
+
 export const sprintSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -175,6 +230,7 @@ export const sprintSchema = z.object({
   status: sprintStatusSchema,
   globalConfig: sprintGlobalConfigSchema,
   doctors: z.array(sprintDoctorSchema),
+  availability: z.array(sprintAvailabilityEntrySchema),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -221,6 +277,11 @@ export type SolveResponse = z.infer<typeof solveResponseSchema>;
 export type Sprint = z.infer<typeof sprintSchema>;
 export type SprintGlobalConfig = z.infer<typeof sprintGlobalConfigSchema>;
 export type SprintDoctor = z.infer<typeof sprintDoctorSchema>;
+export type UserRole = z.infer<typeof userRoleSchema>;
+export type SprintAvailabilityEntry = z.infer<typeof sprintAvailabilityEntrySchema>;
+export type AvailabilityDay = z.infer<typeof availabilityDaySchema>;
+export type SetDoctorAvailabilityRequest = z.infer<typeof setDoctorAvailabilityRequestSchema>;
+export type PlannerOverrideAvailabilityRequest = z.infer<typeof plannerOverrideAvailabilityRequestSchema>;
 export type CreateSprintRequest = z.infer<typeof createSprintRequestSchema>;
 export type UpdateSprintGlobalConfigRequest = z.infer<typeof updateSprintGlobalConfigRequestSchema>;
 export type SprintRun = z.infer<typeof sprintRunSchema>;

@@ -107,9 +107,9 @@ _Ultima actualizacion manual: 2026-02-28 (alineado con evidencia en codigo/repos
   - Existe sprint planificable con configuracion global persistida
 
 ### US-552 Disponibilidad por medico y override planificador (P0, 8)
-- T-552.1 Flujo de autogestion de disponibilidad por medico. Owner: `frontend-planner-ui`. Estado: `todo`
-- T-552.2 Override manual por planificador cuando falte carga. Owner: `frontend-planner-ui`. Estado: `todo`
-- T-552.3 Validar permisos/roles en API para carga de disponibilidad. Owner: `security-compliance`. Estado: `todo`
+- T-552.1 Flujo de autogestion de disponibilidad por medico. Owner: `frontend-planner-ui`. Estado: `in-progress`
+- T-552.2 Override manual por planificador cuando falte carga. Owner: `frontend-planner-ui`. Estado: `in-progress`
+- T-552.3 Validar permisos/roles en API para carga de disponibilidad. Owner: `security-compliance`. Estado: `done`
 - Done cuando:
   - Disponibilidad puede cargarse por medico o por planificador de forma trazable
 

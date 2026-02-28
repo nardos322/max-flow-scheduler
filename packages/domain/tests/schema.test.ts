@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   createSprintRequestSchema,
+  plannerOverrideAvailabilityRequestSchema,
   markSprintReadyRequestSchema,
+  setDoctorAvailabilityRequestSchema,
   runSprintSolveRequestSchema,
   solveRequestSchema,
   solveResponseSchema,
@@ -172,6 +174,7 @@ describe('sprint schemas', () => {
         maxDaysPerDoctorDefault: 8,
       },
       doctors: [{ id: 'd1' }],
+      availability: [],
       createdAt: '2026-02-28T10:00:00.000Z',
       updatedAt: '2026-02-28T10:00:00.000Z',
     });
@@ -218,6 +221,37 @@ describe('sprint schemas', () => {
         demands: [{ dayId: 'day-1', requiredDoctors: 1 }],
         availability: [{ doctorId: 'd1', periodId: 'p1', dayId: 'day-1' }],
       },
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts doctor self-service availability payload', () => {
+    const result = setDoctorAvailabilityRequestSchema.safeParse({
+      availability: [
+        { periodId: 'p1', dayId: 'day-1' },
+        { periodId: 'p1', dayId: 'day-2' },
+      ],
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects duplicate day in doctor self-service availability payload', () => {
+    const result = setDoctorAvailabilityRequestSchema.safeParse({
+      availability: [
+        { periodId: 'p1', dayId: 'day-1' },
+        { periodId: 'p1', dayId: 'day-1' },
+      ],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts planner override availability payload', () => {
+    const result = plannerOverrideAvailabilityRequestSchema.safeParse({
+      doctorId: 'd1',
+      availability: [{ periodId: 'p1', dayId: 'day-3' }],
     });
 
     expect(result.success).toBe(true);

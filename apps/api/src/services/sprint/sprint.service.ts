@@ -1,4 +1,11 @@
-import type { CreateSprintRequest, Sprint, SprintGlobalConfig } from '@scheduler/domain';
+import type {
+  AvailabilityDay,
+  CreateSprintRequest,
+  Sprint,
+  SprintAvailabilityEntry,
+  SprintGlobalConfig,
+  UserRole,
+} from '@scheduler/domain';
 import { getSprintById, listSprints, saveSprint } from './sprint.repository.js';
 
 function createSprintId(): string {
@@ -16,6 +23,7 @@ export function createSprint(payload: CreateSprintRequest): Sprint {
     status: 'draft',
     globalConfig: payload.globalConfig,
     doctors: payload.doctors,
+    availability: [],
     createdAt: timestamp,
     updatedAt: timestamp,
   };
@@ -44,4 +52,56 @@ export function updateSprintGlobalConfig(sprintId: string, globalConfig: SprintG
   };
 
   return saveSprint(updated);
+}
+
+export type UpdateDoctorAvailabilityResult =
+  | { sprint: Sprint }
+  | { error: 'SPRINT_NOT_FOUND' | 'DOCTOR_NOT_FOUND' };
+
+export function updateDoctorAvailability(
+  sprintId: string,
+  doctorId: string,
+  days: AvailabilityDay[],
+  actor: { role: UserRole; userId: string },
+): UpdateDoctorAvailabilityResult {
+  const sprint = getSprintById(sprintId);
+  if (!sprint) {
+    return { error: 'SPRINT_NOT_FOUND' };
+  }
+
+  const doctorExists = sprint.doctors.some((doctor) => doctor.id === doctorId);
+  if (!doctorExists) {
+    return { error: 'DOCTOR_NOT_FOUND' };
+  }
+
+  const source: SprintAvailabilityEntry['source'] =
+    actor.role === 'planner' ? 'planner-override' : 'doctor-self-service';
+  const updatedAt = new Date().toISOString();
+
+  const entries: SprintAvailabilityEntry[] = days.map((entry) => ({
+    doctorId,
+    periodId: entry.periodId,
+    dayId: entry.dayId,
+    source,
+    updatedByUserId: actor.userId,
+    updatedByRole: actor.role,
+    updatedAt,
+  }));
+
+  const updated: Sprint = {
+    ...sprint,
+    availability: [...sprint.availability.filter((item) => item.doctorId !== doctorId), ...entries],
+    updatedAt,
+  };
+
+  return { sprint: saveSprint(updated) };
+}
+
+export function getSprintAvailability(sprintId: string): SprintAvailabilityEntry[] | null {
+  const sprint = getSprintById(sprintId);
+  if (!sprint) {
+    return null;
+  }
+
+  return [...sprint.availability];
 }
