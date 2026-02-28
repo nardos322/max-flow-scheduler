@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { solveRequestSchema, solveResponseSchema } from '../src/index.js';
+import {
+  createSprintRequestSchema,
+  solveRequestSchema,
+  solveResponseSchema,
+  sprintSchema,
+  updateSprintGlobalConfigRequestSchema,
+} from '../src/index.js';
 
 describe('solveRequestSchema', () => {
   const validRequest = {
@@ -121,5 +127,52 @@ describe('solveResponseSchema', () => {
     });
 
     expect(result.success).toBe(false);
+  });
+});
+
+describe('sprint schemas', () => {
+  it('accepts create sprint payload', () => {
+    const result = createSprintRequestSchema.safeParse({
+      name: 'Guardias Marzo',
+      startsOn: '2026-03-01',
+      endsOn: '2026-03-31',
+      globalConfig: {
+        requiredDoctorsPerShift: 2,
+        maxDaysPerDoctorDefault: 8,
+      },
+      doctors: [{ id: 'd1', maxTotalDaysOverride: 7 }],
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects invalid global config update', () => {
+    const result = updateSprintGlobalConfigRequestSchema.safeParse({
+      globalConfig: {
+        requiredDoctorsPerShift: 0,
+        maxDaysPerDoctorDefault: 8,
+      },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts persisted sprint entity', () => {
+    const result = sprintSchema.safeParse({
+      id: 'spr-1',
+      name: 'Guardias Marzo',
+      startsOn: '2026-03-01',
+      endsOn: '2026-03-31',
+      status: 'draft',
+      globalConfig: {
+        requiredDoctorsPerShift: 2,
+        maxDaysPerDoctorDefault: 8,
+      },
+      doctors: [{ id: 'd1' }],
+      createdAt: '2026-02-28T10:00:00.000Z',
+      updatedAt: '2026-02-28T10:00:00.000Z',
+    });
+
+    expect(result.success).toBe(true);
   });
 });

@@ -155,5 +155,46 @@ export const solveResponseSchema = z.object({
   minCut: minCutSchema.optional(),
 });
 
+export const sprintStatusSchema = z.enum(['draft', 'ready-to-solve', 'solved']);
+
+export const sprintGlobalConfigSchema = z.object({
+  requiredDoctorsPerShift: z.number().int().positive(),
+  maxDaysPerDoctorDefault: z.number().int().positive(),
+});
+
+export const sprintDoctorSchema = z.object({
+  id: z.string().min(1),
+  maxTotalDaysOverride: z.number().int().positive().optional(),
+});
+
+export const sprintSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  startsOn: z.string().date(),
+  endsOn: z.string().date(),
+  status: sprintStatusSchema,
+  globalConfig: sprintGlobalConfigSchema,
+  doctors: z.array(sprintDoctorSchema),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+export const createSprintRequestSchema = z.object({
+  name: z.string().min(1),
+  startsOn: z.string().date(),
+  endsOn: z.string().date(),
+  globalConfig: sprintGlobalConfigSchema,
+  doctors: z.array(sprintDoctorSchema).default([]),
+});
+
+export const updateSprintGlobalConfigRequestSchema = z.object({
+  globalConfig: sprintGlobalConfigSchema,
+});
+
 export type SolveRequest = z.infer<typeof solveRequestSchema>;
 export type SolveResponse = z.infer<typeof solveResponseSchema>;
+export type Sprint = z.infer<typeof sprintSchema>;
+export type SprintGlobalConfig = z.infer<typeof sprintGlobalConfigSchema>;
+export type SprintDoctor = z.infer<typeof sprintDoctorSchema>;
+export type CreateSprintRequest = z.infer<typeof createSprintRequestSchema>;
+export type UpdateSprintGlobalConfigRequest = z.infer<typeof updateSprintGlobalConfigRequestSchema>;

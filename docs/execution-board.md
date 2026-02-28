@@ -100,9 +100,9 @@ _Ultima actualizacion manual: 2026-02-28 (alineado con evidencia en codigo/repos
 
 ## EPIC E5.5 - Operacion de Planificacion (Semanas 7-8)
 ### US-551 Sprint y reglas globales (P0, 8)
-- T-551.1 Crear entidad `Sprint` y estado de planificacion. Owner: `planner-architect`. Estado: `todo`
-- T-551.2 Configurar reglas globales (`requiredDoctors`, maximo por medico). Owner: `api-contracts`. Estado: `todo`
-- T-551.3 Persistir configuracion de sprint en API. Owner: `integration-orchestrator`. Estado: `todo`
+- T-551.1 Crear entidad `Sprint` y estado de planificacion. Owner: `planner-architect`. Estado: `done`
+- T-551.2 Configurar reglas globales (`requiredDoctors`, maximo por medico). Owner: `api-contracts`. Estado: `done`
+- T-551.3 Persistir configuracion de sprint en API. Owner: `integration-orchestrator`. Estado: `in-progress`
 - Done cuando:
   - Existe sprint planificable con configuracion global persistida
 
