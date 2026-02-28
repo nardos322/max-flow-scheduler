@@ -3,6 +3,8 @@ import { solveResponseSchema, type SolveRequest, type SolveResponse } from '@sch
 import { HttpError } from '../errors/http.error.js';
 import type { SolveRequestLocals } from '../middlewares/validate-solve-request.middleware.js';
 import { solveScheduleWithEngine } from '../services/solve-schedule.service.js';
+import { EngineRunnerError } from '../services/engine-runner.service.js';
+import { mapEngineRunnerError } from '../services/error-mapper.service.js';
 
 export type SolveSchedule = (request: SolveRequest) => Promise<SolveResponse>;
 
@@ -20,6 +22,10 @@ export function createSolveScheduleController(solveSchedule: SolveSchedule): Req
 
       res.status(200).json(parsedResponse.data);
     } catch (error) {
+      if (error instanceof EngineRunnerError) {
+        next(mapEngineRunnerError(error));
+        return;
+      }
       next(error);
     }
   };

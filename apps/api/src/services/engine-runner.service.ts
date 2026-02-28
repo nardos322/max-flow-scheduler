@@ -8,7 +8,11 @@ const DEFAULT_ENGINE_BINARY = fileURLToPath(
 );
 
 export class EngineRunnerError extends Error {
-  constructor(message: string, readonly code: 'SPAWN_FAILED' | 'EXIT_NON_ZERO' | 'INVALID_JSON' | 'TIMEOUT') {
+  constructor(
+    message: string,
+    readonly code: 'SPAWN_FAILED' | 'EXIT_NON_ZERO' | 'INVALID_JSON' | 'TIMEOUT',
+    readonly stderr?: string,
+  ) {
     super(message);
     this.name = 'EngineRunnerError';
   }
@@ -69,7 +73,7 @@ export async function solveWithEngine(
     process.on('close', (code) => {
       settle(() => {
         if (code !== 0) {
-          reject(new EngineRunnerError(`Engine exited with code ${code}: ${stderr}`, 'EXIT_NON_ZERO'));
+          reject(new EngineRunnerError(`Engine exited with code ${code}: ${stderr}`, 'EXIT_NON_ZERO', stderr));
           return;
         }
 

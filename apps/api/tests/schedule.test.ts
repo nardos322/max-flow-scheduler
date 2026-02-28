@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { EngineRunnerError } from '../src/services/engine-runner.service.js';
 import { createSolveScheduleController } from '../src/controllers/schedule.controller.js';
 import { validateSolveRequestMiddleware } from '../src/middlewares/validate-solve-request.middleware.js';
+import { SolverError } from '../src/errors/solver.error.js';
 
 describe('validateSolveRequestMiddleware', () => {
   it('rejects invalid payloads with field issues', async () => {
@@ -59,13 +60,13 @@ describe('solveScheduleController', () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it('forwards engine errors to error middleware', async () => {
+  it('maps engine semantic errors to 422 solver errors', async () => {
     const status = vi.fn().mockReturnThis();
     const json = vi.fn();
     const next = vi.fn();
     const res = { status, json, locals: { solveRequest: {} } };
     const solveScheduleController = createSolveScheduleController(async () => {
-      throw new EngineRunnerError('boom', 'EXIT_NON_ZERO');
+      throw new EngineRunnerError('boom', 'EXIT_NON_ZERO', 'json parse error');
     });
 
     await solveScheduleController(
@@ -74,7 +75,30 @@ describe('solveScheduleController', () => {
       next,
     );
 
-    expect(next).toHaveBeenCalledWith(expect.any(EngineRunnerError));
+    expect(next).toHaveBeenCalledWith(expect.any(SolverError));
+    const [error] = next.mock.calls[0] as [SolverError];
+    expect(error.statusCode).toBe(422);
+    expect(error.code).toBe('SOLVER_UNPROCESSABLE');
+    expect(error.message).toBe('Solver rejected payload');
     expect(status).not.toHaveBeenCalled();
+  });
+
+  it('maps engine technical failures to 500 solver errors', async () => {
+    const next = vi.fn();
+    const res = { locals: { solveRequest: {} } };
+    const solveScheduleController = createSolveScheduleController(async () => {
+      throw new EngineRunnerError('boom', 'TIMEOUT');
+    });
+
+    await solveScheduleController(
+      {} as never,
+      res as never,
+      next,
+    );
+
+    const [error] = next.mock.calls[0] as [SolverError];
+    expect(error.statusCode).toBe(500);
+    expect(error.code).toBe('TIMEOUT');
+    expect(error.message).toBe('Solver timed out');
   });
 });
