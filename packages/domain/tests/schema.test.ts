@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   createSprintRequestSchema,
+  markSprintReadyRequestSchema,
+  runSprintSolveRequestSchema,
   solveRequestSchema,
   solveResponseSchema,
+  sprintRunSchema,
   sprintSchema,
   updateSprintGlobalConfigRequestSchema,
 } from '../src/index.js';
@@ -171,6 +174,50 @@ describe('sprint schemas', () => {
       doctors: [{ id: 'd1' }],
       createdAt: '2026-02-28T10:00:00.000Z',
       updatedAt: '2026-02-28T10:00:00.000Z',
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts sprint run snapshot entity', () => {
+    const result = sprintRunSchema.safeParse({
+      id: 'run-1',
+      sprintId: 'spr-1',
+      executedAt: '2026-02-28T10:00:00.000Z',
+      status: 'succeeded',
+      inputSnapshot: {
+        contractVersion: '1.0',
+        doctors: [{ id: 'd1', maxTotalDays: 2 }],
+        periods: [{ id: 'p1', dayIds: ['day-1'] }],
+        demands: [{ dayId: 'day-1', requiredDoctors: 1 }],
+        availability: [{ doctorId: 'd1', periodId: 'p1', dayId: 'day-1' }],
+      },
+      outputSnapshot: {
+        contractVersion: '1.0',
+        isFeasible: true,
+        assignedCount: 1,
+        uncoveredDays: [],
+        assignments: [{ doctorId: 'd1', dayId: 'day-1', periodId: 'p1' }],
+      },
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts mark sprint ready payload', () => {
+    const result = markSprintReadyRequestSchema.safeParse({ status: 'ready-to-solve' });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts run sprint solve payload', () => {
+    const result = runSprintSolveRequestSchema.safeParse({
+      request: {
+        contractVersion: '1.0',
+        doctors: [{ id: 'd1', maxTotalDays: 2 }],
+        periods: [{ id: 'p1', dayIds: ['day-1'] }],
+        demands: [{ dayId: 'day-1', requiredDoctors: 1 }],
+        availability: [{ doctorId: 'd1', periodId: 'p1', dayId: 'day-1' }],
+      },
     });
 
     expect(result.success).toBe(true);

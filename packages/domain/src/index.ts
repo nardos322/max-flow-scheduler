@@ -191,6 +191,31 @@ export const updateSprintGlobalConfigRequestSchema = z.object({
   globalConfig: sprintGlobalConfigSchema,
 });
 
+export const runStatusSchema = z.enum(['succeeded', 'failed']);
+
+export const sprintRunSchema = z.object({
+  id: z.string().min(1),
+  sprintId: z.string().min(1),
+  executedAt: z.string().datetime(),
+  status: runStatusSchema,
+  inputSnapshot: solveRequestSchema,
+  outputSnapshot: solveResponseSchema.optional(),
+  error: z
+    .object({
+      code: z.string().min(1),
+      message: z.string().min(1),
+    })
+    .optional(),
+});
+
+export const markSprintReadyRequestSchema = z.object({
+  status: z.literal('ready-to-solve'),
+});
+
+export const runSprintSolveRequestSchema = z.object({
+  request: solveRequestSchema,
+});
+
 export type SolveRequest = z.infer<typeof solveRequestSchema>;
 export type SolveResponse = z.infer<typeof solveResponseSchema>;
 export type Sprint = z.infer<typeof sprintSchema>;
@@ -198,3 +223,6 @@ export type SprintGlobalConfig = z.infer<typeof sprintGlobalConfigSchema>;
 export type SprintDoctor = z.infer<typeof sprintDoctorSchema>;
 export type CreateSprintRequest = z.infer<typeof createSprintRequestSchema>;
 export type UpdateSprintGlobalConfigRequest = z.infer<typeof updateSprintGlobalConfigRequestSchema>;
+export type SprintRun = z.infer<typeof sprintRunSchema>;
+export type MarkSprintReadyRequest = z.infer<typeof markSprintReadyRequestSchema>;
+export type RunSprintSolveRequest = z.infer<typeof runSprintSolveRequestSchema>;

@@ -114,9 +114,9 @@ _Ultima actualizacion manual: 2026-02-28 (alineado con evidencia en codigo/repos
   - Disponibilidad puede cargarse por medico o por planificador de forma trazable
 
 ### US-553 Ready-to-solve y trazabilidad de corridas (P0, 5)
-- T-553.1 Validar estado `ready-to-solve` antes de ejecutar. Owner: `api-contracts`. Estado: `todo`
-- T-553.2 Guardar snapshot de input/output por corrida. Owner: `integration-orchestrator`. Estado: `todo`
-- T-553.3 Exponer historial de corridas por sprint. Owner: `frontend-planner-ui`. Estado: `todo`
+- T-553.1 Validar estado `ready-to-solve` antes de ejecutar. Owner: `api-contracts`. Estado: `done`
+- T-553.2 Guardar snapshot de input/output por corrida. Owner: `integration-orchestrator`. Estado: `done`
+- T-553.3 Exponer historial de corridas por sprint. Owner: `frontend-planner-ui`. Estado: `in-progress`
 - Done cuando:
   - Cada corrida queda registrada y consultable por sprint
 
