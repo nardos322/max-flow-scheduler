@@ -99,6 +99,10 @@ _Ultima actualizacion manual: 2026-02-28 (alineado con evidencia en codigo/repos
   - Flujo end-to-end MVP operativo
 
 ## EPIC E5.5 - Operacion de Planificacion (Semanas 7-8)
+### Estrategia de ejecucion
+- Orden acordado: `backend-first`, luego `frontend`.
+- Criterio: no arrancar UI de US-552/US-553 hasta cerrar contratos/API/tests de backend en E5.5.
+
 ### US-551 Sprint y reglas globales (P0, 8)
 - T-551.1 Crear entidad `Sprint` y estado de planificacion. Owner: `planner-architect`. Estado: `done`
 - T-551.2 Configurar reglas globales (`requiredDoctors`, maximo por medico). Owner: `api-contracts`. Estado: `done`
@@ -107,8 +111,8 @@ _Ultima actualizacion manual: 2026-02-28 (alineado con evidencia en codigo/repos
   - Existe sprint planificable con configuracion global persistida
 
 ### US-552 Disponibilidad por medico y override planificador (P0, 8)
-- T-552.1 Flujo de autogestion de disponibilidad por medico. Owner: `frontend-planner-ui`. Estado: `in-progress`
-- T-552.2 Override manual por planificador cuando falte carga. Owner: `frontend-planner-ui`. Estado: `in-progress`
+- T-552.1 Flujo de autogestion de disponibilidad por medico. Owner: `frontend-planner-ui`. Estado: `todo`
+- T-552.2 Override manual por planificador cuando falte carga. Owner: `frontend-planner-ui`. Estado: `todo`
 - T-552.3 Validar permisos/roles en API para carga de disponibilidad. Owner: `security-compliance`. Estado: `done`
 - Done cuando:
   - Disponibilidad puede cargarse por medico o por planificador de forma trazable
@@ -116,7 +120,7 @@ _Ultima actualizacion manual: 2026-02-28 (alineado con evidencia en codigo/repos
 ### US-553 Ready-to-solve y trazabilidad de corridas (P0, 5)
 - T-553.1 Validar estado `ready-to-solve` antes de ejecutar. Owner: `api-contracts`. Estado: `done`
 - T-553.2 Guardar snapshot de input/output por corrida. Owner: `integration-orchestrator`. Estado: `done`
-- T-553.3 Exponer historial de corridas por sprint. Owner: `frontend-planner-ui`. Estado: `in-progress`
+- T-553.3 Exponer historial de corridas por sprint. Owner: `frontend-planner-ui`. Estado: `todo`
 - Done cuando:
   - Cada corrida queda registrada y consultable por sprint
 

@@ -97,6 +97,11 @@ Permitir planificar sprints con visualizacion de cobertura diaria.
 ### Objetivo
 Pasar de demo tecnica a flujo operativo real de planificacion de sprint.
 
+### Secuencia acordada
+- Fase 1 (backend-first): contratos compartidos, API, permisos/auth, trazabilidad y tests.
+- Fase 2 (frontend): UI de carga operativa, override y visualizacion de historial sobre API estable.
+- Regla: evitar trabajo UI sobre endpoints inestables para reducir retrabajo.
+
 ### Entregables
 - Modelo de `Sprint` planificable (periodo objetivo, estado, metadata).
 - Configuracion global por sprint:
