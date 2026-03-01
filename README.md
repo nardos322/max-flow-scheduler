@@ -59,7 +59,7 @@ Monorepo para planificacion de medicos en vacaciones usando un solver de max-flo
    - Este comando:
      - instala dependencias,
      - crea `apps/api/.env` desde `apps/api/.env.development.example` si no existe,
-     - ejecuta migraciones Prisma en `apps/api/dev.db`,
+     - ejecuta migraciones Prisma en `apps/api/.data/dev.db`,
      - carga seed demo (doctores, periodo, sprint listo y ciclo demo).
 2. Levantar API + web:
    - `pnpm dev`
@@ -80,7 +80,7 @@ Monorepo para planificacion de medicos en vacaciones usando un solver de max-flo
   - `pnpm --filter @scheduler/api run db:studio`
   - `pnpm --filter @scheduler/api run test:prisma:sprint`
 - Ejemplo local de URL SQLite:
-  - `DATABASE_URL="file:./dev.db"`
+  - `DATABASE_URL="file:./.data/dev.db"`
   - Alternativa: copiar `apps/api/.env.example` a `apps/api/.env`
 
 ## Perfiles de auth (API)

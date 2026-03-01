@@ -16,7 +16,7 @@ COPY packages/domain ./packages/domain
 COPY apps/api ./apps/api
 
 RUN pnpm install --frozen-lockfile=false --filter @scheduler/api...
-RUN DATABASE_URL=file:./apps/api/dev.db pnpm --filter @scheduler/api run db:generate
+RUN DATABASE_URL=file:./apps/api/.data/dev.db pnpm --filter @scheduler/api run db:generate
 
 COPY --from=engine-builder /build/services/engine-cpp/build/scheduler_engine /workspace/services/engine-cpp/build/scheduler_engine
 

@@ -22,7 +22,13 @@ if [[ ! -f apps/api/.env ]]; then
   cp apps/api/.env.development.example apps/api/.env
 else
   echo "[setup:local] apps/api/.env already exists, keeping current values."
+  if grep -q '^DATABASE_URL="file:\./dev\.db"$' apps/api/.env; then
+    echo "[setup:local] Warning: apps/api/.env still points to file:./dev.db."
+    echo "[setup:local]          Recommended: update DATABASE_URL to file:./.data/dev.db"
+  fi
 fi
+
+mkdir -p apps/api/.data
 
 echo "[setup:local] Preparing local database (Prisma migrate + generate)..."
 pnpm --filter @scheduler/api run db:setup:local

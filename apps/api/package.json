@@ -10,16 +10,16 @@
     "openapi:export:dev": "tsx scripts/export-openapi.ts",
     "lint": "eslint src tests --max-warnings=0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "rm -f test-prisma.db test-prisma.db-journal && DATABASE_URL=file:./test-prisma.db prisma migrate deploy --schema prisma/schema.prisma && DATABASE_URL=file:./test-prisma.db vitest run --maxWorkers=1",
-    "test:prisma:sprint": "rm -f test-prisma.db test-prisma.db-journal && DATABASE_URL=file:./test-prisma.db prisma migrate deploy --schema prisma/schema.prisma && DATABASE_URL=file:./test-prisma.db vitest run --maxWorkers=1 tests/sprint.test.ts tests/sprint-availability.test.ts tests/sprint-runs.test.ts",
+    "test": "mkdir -p .data && rm -f .data/test-prisma.db .data/test-prisma.db-journal && DATABASE_URL=file:./.data/test-prisma.db prisma migrate deploy --schema prisma/schema.prisma && DATABASE_URL=file:./.data/test-prisma.db vitest run --maxWorkers=1",
+    "test:prisma:sprint": "mkdir -p .data && rm -f .data/test-prisma.db .data/test-prisma.db-journal && DATABASE_URL=file:./.data/test-prisma.db prisma migrate deploy --schema prisma/schema.prisma && DATABASE_URL=file:./.data/test-prisma.db vitest run --maxWorkers=1 tests/sprint.test.ts tests/sprint-availability.test.ts tests/sprint-runs.test.ts",
     "format": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\"",
     "db:generate": "prisma generate --schema prisma/schema.prisma",
     "db:migrate": "prisma migrate dev --schema prisma/schema.prisma",
     "db:migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
     "db:studio": "prisma studio --schema prisma/schema.prisma",
-    "db:setup:local": "DATABASE_URL=file:./dev.db prisma migrate deploy --schema prisma/schema.prisma && DATABASE_URL=file:./dev.db prisma generate --schema prisma/schema.prisma",
-    "db:seed:demo": "DATABASE_URL=file:./dev.db node scripts/seed-demo.mjs",
-    "db:reset:local": "rm -f dev.db dev.db-journal && pnpm run db:setup:local"
+    "db:setup:local": "mkdir -p .data && DATABASE_URL=file:./.data/dev.db prisma migrate deploy --schema prisma/schema.prisma && DATABASE_URL=file:./.data/dev.db prisma generate --schema prisma/schema.prisma",
+    "db:seed:demo": "mkdir -p .data && DATABASE_URL=file:./.data/dev.db node scripts/seed-demo.mjs",
+    "db:reset:local": "mkdir -p .data && rm -f .data/dev.db .data/dev.db-journal && pnpm run db:setup:local"
   },
   "dependencies": {
     "@libsql/client": "^0.17.0",
