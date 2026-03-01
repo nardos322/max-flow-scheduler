@@ -14,14 +14,13 @@ _Ultima actualizacion manual: 2026-03-01 (alineado con evidencia en codigo/repos
 - Tareas frontend que quedan en espera por esta decision: `T-502.1`, `T-502.2`, `T-502.3`, `T-552.1`, `T-552.2`, `T-553.3`.
 
 ### Cola activa backend-only
-1. `T-301.3` Revisar formalmente el modelo implementado.
-2. `T-601.1` Headers, rate-limit, body limits, sanitizacion de errores.
-3. `T-601.2` Secret scanning y politica de secretos.
-4. `T-602.1` Ejecutar benchmark matrix final.
-5. `T-602.2` Definir budgets y alarmas de regresion.
-6. `T-603.1` Dockerizar API/engine.
-7. `T-603.2` Pipeline de release + rollback.
-8. `T-603.3` Runbook/ADR/changelog tecnico.
+1. `T-601.1` Headers, rate-limit, body limits, sanitizacion de errores.
+2. `T-601.2` Secret scanning y politica de secretos.
+3. `T-602.1` Ejecutar benchmark matrix final.
+4. `T-602.2` Definir budgets y alarmas de regresion.
+5. `T-603.1` Dockerizar API/engine.
+6. `T-603.2` Pipeline de release + rollback.
+7. `T-603.3` Runbook/ADR/changelog tecnico.
 
 ## EPIC E1 - Foundation Monorepo (Semanas 1-2)
 ### US-101 Definir arquitectura y alcance (P0, 5)
@@ -76,7 +75,7 @@ _Ultima actualizacion manual: 2026-03-01 (alineado con evidencia en codigo/repos
 ### US-301 Implementar red de flujo (P0, 8)
 - T-301.1 Mapear nodos/aristas/capacidades desde input. Owner: `cpp-engine`. Estado: `done`
 - T-301.2 Validar restricciones (`C_i`, por periodo, disponibilidad, `R_d`). Owner: `cpp-engine`. Estado: `done`
-- T-301.3 Revisar formalmente el modelo implementado. Owner: `modeling-theory`. Estado: `todo`
+- T-301.3 Revisar formalmente el modelo implementado. Owner: `modeling-theory`. Estado: `done`
 - Done cuando:
   - Constructor de red cubierto por unit tests
 
