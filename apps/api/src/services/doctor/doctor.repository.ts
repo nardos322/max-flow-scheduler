@@ -110,10 +110,18 @@ export async function deleteDoctor(doctorId: string): Promise<boolean> {
 
 export async function clearDoctorStore(): Promise<void> {
   const prisma = (await getPrismaClient()) as unknown as {
+    sprintAvailability: {
+      deleteMany: (args?: Record<string, unknown>) => Promise<unknown>;
+    };
+    sprintDoctor: {
+      deleteMany: (args?: Record<string, unknown>) => Promise<unknown>;
+    };
     doctor: {
       deleteMany: (args?: Record<string, unknown>) => Promise<unknown>;
     };
   };
 
+  await prisma.sprintAvailability.deleteMany({});
+  await prisma.sprintDoctor.deleteMany({});
   await prisma.doctor.deleteMany({});
 }

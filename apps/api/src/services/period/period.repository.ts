@@ -232,6 +232,12 @@ export async function deletePeriod(periodId: string): Promise<boolean> {
 
 export async function clearPeriodStore(): Promise<void> {
   const prisma = (await getPrismaClient()) as unknown as {
+    sprintAvailability: {
+      deleteMany: (args?: Record<string, unknown>) => Promise<unknown>;
+    };
+    sprint: {
+      deleteMany: (args?: Record<string, unknown>) => Promise<unknown>;
+    };
     periodDemand: {
       deleteMany: (args?: Record<string, unknown>) => Promise<unknown>;
     };
@@ -240,6 +246,8 @@ export async function clearPeriodStore(): Promise<void> {
     };
   };
 
+  await prisma.sprintAvailability.deleteMany({});
+  await prisma.sprint.deleteMany({});
   await prisma.periodDemand.deleteMany({});
   await prisma.period.deleteMany({});
 }

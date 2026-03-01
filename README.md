@@ -20,6 +20,7 @@ Monorepo para planificacion de medicos en vacaciones usando un solver de max-flo
 - Catalogo global de medicos (`/doctors`).
 - Catalogo global de periodos (`/periods`) con demandas por dia (`/periods/:id/demands`).
 - `Sprint` referencia `periodId` + `doctorIds` (subset de medicos del catalogo).
+- Participantes del sprint editables en `draft` (`POST /sprints/:id/doctors`, `DELETE /sprints/:id/doctors/:doctorId`).
 - Disponibilidad se registra por sprint/doctor/dia, y el planner puede override.
 
 ## Comandos raiz

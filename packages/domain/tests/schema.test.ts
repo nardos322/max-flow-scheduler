@@ -3,6 +3,7 @@ import {
   createDoctorRequestSchema,
   createPeriodRequestSchema,
   createSprintRequestSchema,
+  addSprintDoctorRequestSchema,
   doctorCatalogSchema,
   markSprintReadyRequestSchema,
   periodCatalogSchema,
@@ -274,6 +275,11 @@ describe('sprint schemas', () => {
   it('accepts run sprint solve payload', () => {
     const result = runSprintSolveRequestSchema.safeParse({});
 
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts add sprint doctor payload', () => {
+    const result = addSprintDoctorRequestSchema.safeParse({ doctorId: 'doc-1' });
     expect(result.success).toBe(true);
   });
 
