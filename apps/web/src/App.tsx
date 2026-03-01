@@ -38,6 +38,14 @@ const sprintAvailabilityListResponseSchema = z.object({
 type RunSolveResponse = z.infer<typeof runSolveResponseSchema>;
 type SprintRunListResponse = z.infer<typeof sprintRunListResponseSchema>;
 type SprintAvailabilityListResponse = z.infer<typeof sprintAvailabilityListResponseSchema>;
+type StepStatus = 'pending' | 'active' | 'done';
+
+type FlowStep = {
+  id: string;
+  label: string;
+  hint: string;
+  status: StepStatus;
+};
 
 function buildHeaders(token: string): HeadersInit {
   const headers: Record<string, string> = {
@@ -203,6 +211,26 @@ function parseDayIds(raw: string): string[] {
   return Array.from(unique).sort((a, b) => a.localeCompare(b));
 }
 
+function statusBadgeClass(status: string): string {
+  if (status === 'ready-to-solve') {
+    return 'border-amber-300 bg-amber-100 text-amber-800';
+  }
+  if (status === 'solved') {
+    return 'border-emerald-300 bg-emerald-100 text-emerald-800';
+  }
+  return 'border-slate-300 bg-slate-100 text-slate-700';
+}
+
+function stepClass(status: StepStatus): string {
+  if (status === 'done') {
+    return 'border-emerald-300 bg-emerald-100 text-emerald-800';
+  }
+  if (status === 'active') {
+    return 'border-amber-300 bg-amber-100 text-amber-800';
+  }
+  return 'border-slate-300 bg-slate-100 text-slate-700';
+}
+
 export function App() {
   const [sprintId, setSprintId] = useState('');
   const [token, setToken] = useState('');
@@ -212,6 +240,7 @@ export function App() {
   const [overrideDoctorId, setOverrideDoctorId] = useState('');
   const [overridePeriodId, setOverridePeriodId] = useState('');
   const [overrideDays, setOverrideDays] = useState('');
+  const [lastActionMessage, setLastActionMessage] = useState('');
 
   const historyQuery = useQuery({
     queryKey: ['sprint-runs', sprintId, token],
@@ -237,6 +266,7 @@ export function App() {
   const solveMutation = useMutation({
     mutationFn: () => runSprintSolve(sprintId, token),
     onSuccess: async () => {
+      setLastActionMessage('Corrida ejecutada. Se refrescaron sprint, disponibilidad e historial.');
       await Promise.all([historyQuery.refetch(), availabilityQuery.refetch(), sprintQuery.refetch()]);
     },
   });
@@ -251,6 +281,7 @@ export function App() {
         token,
       }),
     onSuccess: async () => {
+      setLastActionMessage('Disponibilidad del medico guardada correctamente.');
       await Promise.all([availabilityQuery.refetch(), sprintQuery.refetch()]);
     },
   });
@@ -265,6 +296,7 @@ export function App() {
         token,
       }),
     onSuccess: async () => {
+      setLastActionMessage('Override del planificador guardado correctamente.');
       await Promise.all([availabilityQuery.refetch(), sprintQuery.refetch()]);
     },
   });
@@ -272,6 +304,7 @@ export function App() {
   const markReadyMutation = useMutation({
     mutationFn: () => markSprintReady(sprintId, token),
     onSuccess: async () => {
+      setLastActionMessage('Sprint marcado como ready-to-solve.');
       await Promise.all([sprintQuery.refetch(), availabilityQuery.refetch(), historyQuery.refetch()]);
     },
   });
@@ -308,6 +341,10 @@ export function App() {
   const hasAvailability =
     (availabilityQuery.data?.items.length ?? 0) > 0 || (sprintQuery.data?.availability.length ?? 0) > 0;
   const isReadyToRun = sprintQuery.data?.status === 'ready-to-solve' || sprintQuery.data?.status === 'solved';
+  const parsedDoctorDays = parseDayIds(doctorDays);
+  const parsedOverrideDays = parseDayIds(overrideDays);
+  const availabilityTotal = availabilityQuery.data?.items.length ?? sprintQuery.data?.availability.length ?? 0;
+  const runHistoryTotal = historyQuery.data?.items.length ?? 0;
 
   const canRun = sprintId.trim().length > 0 && hasSprintLoaded && isReadyToRun;
   const canMarkReady = sprintId.trim().length > 0 && hasSprintLoaded && !isReadyToRun && !markReadyMutation.isPending;
@@ -315,6 +352,34 @@ export function App() {
     sprintId.trim().length > 0 && doctorId.trim().length > 0 && doctorPeriodId.trim().length > 0;
   const canSetOverrideAvailability =
     sprintId.trim().length > 0 && overrideDoctorId.trim().length > 0 && overridePeriodId.trim().length > 0;
+  const canLoadAll = sprintId.trim().length > 0;
+
+  const flowSteps: FlowStep[] = [
+    {
+      id: 'load-sprint',
+      label: 'Cargar sprint',
+      hint: hasSprintLoaded ? 'Sprint cargado' : 'Pendiente',
+      status: hasSprintLoaded ? 'done' : 'active',
+    },
+    {
+      id: 'load-availability',
+      label: 'Cargar disponibilidad',
+      hint: hasAvailability ? `${availabilityTotal} dias cargados` : 'Pendiente',
+      status: hasAvailability ? 'done' : hasSprintLoaded ? 'active' : 'pending',
+    },
+    {
+      id: 'mark-ready',
+      label: 'Marcar ready',
+      hint: isReadyToRun ? 'Estado listo' : 'Pendiente',
+      status: isReadyToRun ? 'done' : hasSprintLoaded && hasAvailability ? 'active' : 'pending',
+    },
+    {
+      id: 'run-solver',
+      label: 'Ejecutar corrida',
+      hint: solveMutation.data ? 'Ultima corrida registrada' : 'Pendiente',
+      status: solveMutation.data ? 'done' : isReadyToRun ? 'active' : 'pending',
+    },
+  ];
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#fff4dd_0%,#fffdfa_38%,#f8fafc_100%)] px-4 py-8 text-slate-900 md:px-8">
@@ -327,7 +392,7 @@ export function App() {
         </Card>
 
         <Card className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-[1fr_2fr_auto_auto_auto_auto] md:items-end">
+          <div className="grid gap-3 md:grid-cols-[1fr_2fr_auto_auto_auto_auto_auto] md:items-end">
             <label className="text-sm text-slate-700">
               Sprint ID
               <input
@@ -370,6 +435,17 @@ export function App() {
 
             <Button
               variant="outline"
+              onClick={() => {
+                void Promise.all([sprintQuery.refetch(), availabilityQuery.refetch(), historyQuery.refetch()]);
+              }}
+              disabled={!canLoadAll || sprintQuery.isFetching || availabilityQuery.isFetching || historyQuery.isFetching}
+              aria-label="Refrescar todo"
+            >
+              <RefreshCcw className="mr-2 h-4 w-4" /> Refrescar todo
+            </Button>
+
+            <Button
+              variant="outline"
               onClick={() => markReadyMutation.mutate()}
               disabled={!canMarkReady || !hasAvailability}
               aria-label="Marcar ready-to-solve"
@@ -394,11 +470,29 @@ export function App() {
             {hasSprintLoaded && isReadyToRun ? <p className="mt-1">Estado: sprint listo para ejecutar.</p> : null}
           </div>
 
+          <div className="grid gap-2 md:grid-cols-4">
+            {flowSteps.map((step, index) => (
+              <div key={step.id} className={`rounded-md border px-3 py-2 text-xs ${stepClass(step.status)}`}>
+                <p className="font-semibold uppercase tracking-wide">
+                  {index + 1}. {step.label}
+                </p>
+                <p className="mt-1">{step.hint}</p>
+              </div>
+            ))}
+          </div>
+
           {token.trim().length === 0 ? (
             <p className="flex items-center gap-2 text-xs text-slate-500">
               <Shield className="h-3.5 w-3.5" />
               Si la API requiere auth, pega un JWT valido. En dev puedes usar <code>/auth/dev/token</code>.
             </p>
+          ) : null}
+
+          {lastActionMessage ? (
+            <div className="flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+              <CheckCircle2 className="h-4 w-4" />
+              {lastActionMessage}
+            </div>
           ) : null}
 
           {firstError && (
@@ -412,11 +506,30 @@ export function App() {
         {sprintQuery.data ? (
           <Card className="space-y-2 border-slate-300 bg-white/70">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-700">Sprint cargado</h2>
-            <p className="text-sm text-slate-700">Estado: {sprintQuery.data.status}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-sm text-slate-700">Estado:</p>
+              <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${statusBadgeClass(sprintQuery.data.status)}`}>
+                {sprintQuery.data.status}
+              </span>
+            </div>
             <p className="text-sm text-slate-700">Periodo: {sprintQuery.data.periodId}</p>
             <p className="text-sm text-slate-700">
               Medicos: {sprintQuery.data.doctorIds.length > 0 ? sprintQuery.data.doctorIds.join(', ') : 'ninguno'}
             </p>
+            <div className="grid gap-2 pt-1 md:grid-cols-3">
+              <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                <p className="uppercase tracking-wide text-slate-500">Medicos en sprint</p>
+                <p className="mt-1 text-sm font-semibold text-slate-800">{sprintQuery.data.doctorIds.length}</p>
+              </div>
+              <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                <p className="uppercase tracking-wide text-slate-500">Dias disponibles</p>
+                <p className="mt-1 text-sm font-semibold text-slate-800">{availabilityTotal}</p>
+              </div>
+              <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                <p className="uppercase tracking-wide text-slate-500">Corridas registradas</p>
+                <p className="mt-1 text-sm font-semibold text-slate-800">{runHistoryTotal}</p>
+              </div>
+            </div>
           </Card>
         ) : null}
 
@@ -458,6 +571,7 @@ export function App() {
                   onChange={(event) => setDoctorDays(event.target.value)}
                 />
               </label>
+              <p className="text-xs text-slate-500">Se parsean {parsedDoctorDays.length} dias unicos para guardar.</p>
               <Button
                 onClick={() => setDoctorAvailabilityMutation.mutate()}
                 disabled={!canSetDoctorAvailability || setDoctorAvailabilityMutation.isPending}
@@ -499,6 +613,7 @@ export function App() {
                   onChange={(event) => setOverrideDays(event.target.value)}
                 />
               </label>
+              <p className="text-xs text-slate-500">Se parsean {parsedOverrideDays.length} dias unicos para guardar.</p>
               <Button
                 variant="outline"
                 onClick={() => setOverrideAvailabilityMutation.mutate()}
