@@ -16,6 +16,12 @@ Monorepo para planificacion de medicos en vacaciones usando un solver de max-flo
 - `services/engine-cpp`: motor de flujo maximo
 - `infra`: infraestructura local/CI
 
+## Modelo backend actual
+- Catalogo global de medicos (`/doctors`).
+- Catalogo global de periodos (`/periods`) con demandas por dia (`/periods/:id/demands`).
+- `Sprint` referencia `periodId` + `doctorIds` (subset de medicos del catalogo).
+- Disponibilidad se registra por sprint/doctor/dia, y el planner puede override.
+
 ## Comandos raiz
 - `pnpm dev`
 - `pnpm build`
@@ -64,4 +70,4 @@ Monorepo para planificacion de medicos en vacaciones usando un solver de max-flo
 ## Nota MVP
 - Integracion API -> engine via CLI (`stdin/stdout`).
 - Autenticacion JWT aplicada a endpoints de negocio; `/health` permanece publico.
-- Persistencia backend de sprints/corridas sobre Prisma + SQLite.
+- Persistencia backend de catalogos (medicos/periodos) + sprints/corridas sobre Prisma + SQLite.

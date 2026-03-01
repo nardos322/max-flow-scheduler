@@ -60,8 +60,7 @@ async function saveSprintPrisma(sprint: Sprint): Promise<Sprint> {
       where: { id: sprint.id },
       update: {
         name: sprint.name,
-        startsOn: sprint.startsOn,
-        endsOn: sprint.endsOn,
+        periodId: sprint.periodId,
         status: toDbSprintStatus(sprint.status),
         requiredDoctorsPerShift: sprint.globalConfig.requiredDoctorsPerShift,
         maxDaysPerDoctorDefault: sprint.globalConfig.maxDaysPerDoctorDefault,
@@ -70,8 +69,7 @@ async function saveSprintPrisma(sprint: Sprint): Promise<Sprint> {
       create: {
         id: sprint.id,
         name: sprint.name,
-        startsOn: sprint.startsOn,
-        endsOn: sprint.endsOn,
+        periodId: sprint.periodId,
         status: toDbSprintStatus(sprint.status),
         requiredDoctorsPerShift: sprint.globalConfig.requiredDoctorsPerShift,
         maxDaysPerDoctorDefault: sprint.globalConfig.maxDaysPerDoctorDefault,
@@ -81,13 +79,12 @@ async function saveSprintPrisma(sprint: Sprint): Promise<Sprint> {
     });
 
     await tx.sprintDoctor.deleteMany({ where: { sprintId: sprint.id } });
-    if (sprint.doctors.length > 0) {
+    if (sprint.doctorIds.length > 0) {
       await tx.sprintDoctor.createMany({
-        data: sprint.doctors.map((doctor) => ({
-          id: buildDoctorRowId(sprint.id, doctor.id),
+        data: sprint.doctorIds.map((doctorId) => ({
+          id: buildDoctorRowId(sprint.id, doctorId),
           sprintId: sprint.id,
-          doctorId: doctor.id,
-          maxTotalDaysOverride: doctor.maxTotalDaysOverride ?? null,
+          doctorId,
           createdAt: new Date(sprint.createdAt),
           updatedAt: new Date(sprint.updatedAt),
         })),
@@ -118,8 +115,7 @@ async function saveSprintPrisma(sprint: Sprint): Promise<Sprint> {
 function mapPrismaSprintRecordToDomain(record: {
   id: string;
   name: string;
-  startsOn: string;
-  endsOn: string;
+  periodId: string;
   status: string;
   requiredDoctorsPerShift: number;
   maxDaysPerDoctorDefault: number;
@@ -127,7 +123,6 @@ function mapPrismaSprintRecordToDomain(record: {
   updatedAt: Date;
   doctors: Array<{
     doctorId: string;
-    maxTotalDaysOverride: number | null;
   }>;
   availabilityEntries: Array<{
     doctorId: string;
@@ -142,17 +137,13 @@ function mapPrismaSprintRecordToDomain(record: {
   return {
     id: record.id,
     name: record.name,
-    startsOn: record.startsOn,
-    endsOn: record.endsOn,
+    periodId: record.periodId,
     status: toDomainSprintStatus(record.status),
     globalConfig: {
       requiredDoctorsPerShift: record.requiredDoctorsPerShift,
       maxDaysPerDoctorDefault: record.maxDaysPerDoctorDefault,
     },
-    doctors: record.doctors.map((doctor) => ({
-      id: doctor.doctorId,
-      ...(doctor.maxTotalDaysOverride !== null ? { maxTotalDaysOverride: doctor.maxTotalDaysOverride } : {}),
-    })),
+    doctorIds: record.doctors.map((doctor) => doctor.doctorId),
     availability: record.availabilityEntries.map((entry) => ({
       doctorId: entry.doctorId,
       periodId: entry.periodId,
@@ -173,8 +164,7 @@ async function getSprintByIdPrisma(id: string): Promise<Sprint | null> {
       findUnique: (args: Record<string, unknown>) => Promise<{
         id: string;
         name: string;
-        startsOn: string;
-        endsOn: string;
+        periodId: string;
         status: string;
         requiredDoctorsPerShift: number;
         maxDaysPerDoctorDefault: number;
@@ -182,7 +172,6 @@ async function getSprintByIdPrisma(id: string): Promise<Sprint | null> {
         updatedAt: Date;
         doctors: Array<{
           doctorId: string;
-          maxTotalDaysOverride: number | null;
         }>;
         availabilityEntries: Array<{
           doctorId: string;
@@ -222,8 +211,7 @@ async function listSprintsPrisma(): Promise<Sprint[]> {
       findMany: (args: Record<string, unknown>) => Promise<Array<{
         id: string;
         name: string;
-        startsOn: string;
-        endsOn: string;
+        periodId: string;
         status: string;
         requiredDoctorsPerShift: number;
         maxDaysPerDoctorDefault: number;
@@ -231,7 +219,6 @@ async function listSprintsPrisma(): Promise<Sprint[]> {
         updatedAt: Date;
         doctors: Array<{
           doctorId: string;
-          maxTotalDaysOverride: number | null;
         }>;
         availabilityEntries: Array<{
           doctorId: string;

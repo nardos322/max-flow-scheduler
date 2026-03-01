@@ -9,14 +9,26 @@ import {
   validateCreateSprintMiddleware,
   validateUpdateSprintGlobalConfigMiddleware,
 } from '../src/middlewares/sprint/validate-sprint.middleware.js';
+import { createDoctor, clearDoctorStore } from '../src/services/doctor/doctor.repository.js';
+import { clearPeriodStore, createPeriod } from '../src/services/period/period.repository.js';
 import { clearSprintStore } from '../src/services/sprint/sprint.repository.js';
 
 describe('sprint controllers', () => {
   beforeEach(async () => {
     await clearSprintStore();
+    await clearDoctorStore();
+    await clearPeriodStore();
   });
 
   it('creates and fetches a sprint', async () => {
+    const doctor = await createDoctor({ name: 'Dr. Uno', active: true, maxTotalDaysDefault: 8 });
+    const period = await createPeriod({
+      name: 'Marzo 2026',
+      startsOn: '2026-03-01',
+      endsOn: '2026-03-31',
+      demands: [{ dayId: '2026-03-10', requiredDoctors: 2 }],
+    });
+
     const status = vi.fn().mockReturnThis();
     const json = vi.fn();
     const next = vi.fn();
@@ -26,10 +38,9 @@ describe('sprint controllers', () => {
       {
         body: {
           name: 'Guardias Marzo',
-          startsOn: '2026-03-01',
-          endsOn: '2026-03-31',
+          periodId: period.id,
           globalConfig: { requiredDoctorsPerShift: 2, maxDaysPerDoctorDefault: 8 },
-          doctors: [{ id: 'd1' }],
+          doctorIds: [doctor.id],
         },
       } as never,
       res as never,
@@ -62,6 +73,14 @@ describe('sprint controllers', () => {
   });
 
   it('updates sprint global config', async () => {
+    const doctor = await createDoctor({ name: 'Dr. Uno', active: true, maxTotalDaysDefault: 8 });
+    const period = await createPeriod({
+      name: 'Abril 2026',
+      startsOn: '2026-04-01',
+      endsOn: '2026-04-30',
+      demands: [{ dayId: '2026-04-10', requiredDoctors: 1 }],
+    });
+
     const next = vi.fn();
     const createRes = { status: vi.fn().mockReturnThis(), json: vi.fn(), locals: {} };
 
@@ -69,10 +88,9 @@ describe('sprint controllers', () => {
       {
         body: {
           name: 'Guardias Abril',
-          startsOn: '2026-04-01',
-          endsOn: '2026-04-30',
+          periodId: period.id,
           globalConfig: { requiredDoctorsPerShift: 1, maxDaysPerDoctorDefault: 6 },
-          doctors: [],
+          doctorIds: [doctor.id],
         },
       } as never,
       createRes as never,
@@ -128,8 +146,7 @@ describe('sprint controllers', () => {
       {
         body: {
           name: '',
-          startsOn: '2026-03-01',
-          endsOn: '2026-03-31',
+          periodId: '',
           globalConfig: { requiredDoctorsPerShift: 0, maxDaysPerDoctorDefault: 8 },
         },
       } as never,

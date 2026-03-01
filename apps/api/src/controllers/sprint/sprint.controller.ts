@@ -19,6 +19,17 @@ export const createSprintController: RequestHandler = async (req, res, next) => 
     const sprint = await createSprint(payload);
     res.status(201).json(sprint);
   } catch (error) {
+    if (error instanceof Error && error.message === 'PERIOD_NOT_FOUND') {
+      next(new HttpError(404, { error: 'Period not found' }));
+      return;
+    }
+
+    if (error instanceof Error && error.message.startsWith('DOCTORS_NOT_FOUND:')) {
+      const missing = error.message.slice('DOCTORS_NOT_FOUND:'.length).split(',').filter((item) => item.length > 0);
+      next(new HttpError(404, { error: 'Doctor not found or inactive', details: missing }));
+      return;
+    }
+
     next(error);
   }
 };

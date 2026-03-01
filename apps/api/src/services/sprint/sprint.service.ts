@@ -6,6 +6,8 @@ import type {
   SprintGlobalConfig,
   UserRole,
 } from '@scheduler/domain';
+import { ensureActiveDoctorsOrMissing } from '../doctor/doctor.service.js';
+import { getPeriodById } from '../period/period.service.js';
 import { getSprintById, listSprints, saveSprint } from './sprint.repository.js';
 
 function createSprintId(): string {
@@ -14,15 +16,23 @@ function createSprintId(): string {
 
 export async function createSprint(payload: CreateSprintRequest): Promise<Sprint> {
   const timestamp = new Date().toISOString();
+  const period = await getPeriodById(payload.periodId);
+  if (!period) {
+    throw new Error('PERIOD_NOT_FOUND');
+  }
+
+  const doctorCheck = await ensureActiveDoctorsOrMissing(payload.doctorIds);
+  if (doctorCheck.missing.length > 0) {
+    throw new Error(`DOCTORS_NOT_FOUND:${doctorCheck.missing.join(',')}`);
+  }
 
   const sprint: Sprint = {
     id: createSprintId(),
     name: payload.name,
-    startsOn: payload.startsOn,
-    endsOn: payload.endsOn,
+    periodId: payload.periodId,
     status: 'draft',
     globalConfig: payload.globalConfig,
-    doctors: payload.doctors,
+    doctorIds: payload.doctorIds,
     availability: [],
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -59,7 +69,7 @@ export async function updateSprintGlobalConfig(
 
 export type UpdateDoctorAvailabilityResult =
   | { sprint: Sprint }
-  | { error: 'SPRINT_NOT_FOUND' | 'DOCTOR_NOT_FOUND' };
+  | { error: 'SPRINT_NOT_FOUND' | 'DOCTOR_NOT_FOUND' | 'PERIOD_NOT_FOUND' | 'PERIOD_MISMATCH' | 'DAY_OUT_OF_RANGE' };
 
 export async function updateDoctorAvailability(
   sprintId: string,
@@ -72,9 +82,24 @@ export async function updateDoctorAvailability(
     return { error: 'SPRINT_NOT_FOUND' };
   }
 
-  const doctorExists = sprint.doctors.some((doctor) => doctor.id === doctorId);
+  const doctorExists = sprint.doctorIds.includes(doctorId);
   if (!doctorExists) {
     return { error: 'DOCTOR_NOT_FOUND' };
+  }
+
+  const period = await getPeriodById(sprint.periodId);
+  if (!period) {
+    return { error: 'PERIOD_NOT_FOUND' };
+  }
+
+  const mismatch = days.some((day) => day.periodId !== sprint.periodId);
+  if (mismatch) {
+    return { error: 'PERIOD_MISMATCH' };
+  }
+
+  const outOfRange = days.some((day) => day.dayId < period.startsOn || day.dayId > period.endsOn);
+  if (outOfRange) {
+    return { error: 'DAY_OUT_OF_RANGE' };
   }
 
   const source: SprintAvailabilityEntry['source'] =

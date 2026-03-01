@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
+  createDoctorRequestSchema,
+  createPeriodRequestSchema,
   createSprintRequestSchema,
-  plannerOverrideAvailabilityRequestSchema,
+  doctorCatalogSchema,
   markSprintReadyRequestSchema,
-  setDoctorAvailabilityRequestSchema,
+  periodCatalogSchema,
+  plannerOverrideAvailabilityRequestSchema,
+  replacePeriodDemandsRequestSchema,
   runSprintSolveRequestSchema,
+  setDoctorAvailabilityRequestSchema,
   solveRequestSchema,
   solveResponseSchema,
   sprintRunSchema,
@@ -136,16 +141,71 @@ describe('solveResponseSchema', () => {
 });
 
 describe('sprint schemas', () => {
+  it('accepts doctor catalog entity', () => {
+    const result = doctorCatalogSchema.safeParse({
+      id: 'doc-1',
+      name: 'Dr. House',
+      active: true,
+      maxTotalDaysDefault: 8,
+      createdAt: '2026-02-28T10:00:00.000Z',
+      updatedAt: '2026-02-28T10:00:00.000Z',
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts create doctor payload', () => {
+    const result = createDoctorRequestSchema.safeParse({
+      name: 'Dr. Wilson',
+      active: true,
+      maxTotalDaysDefault: 6,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts period catalog entity', () => {
+    const result = periodCatalogSchema.safeParse({
+      id: 'per-1',
+      name: 'Marzo 2026',
+      startsOn: '2026-03-01',
+      endsOn: '2026-03-31',
+      demands: [{ dayId: '2026-03-01', requiredDoctors: 2 }],
+      createdAt: '2026-02-28T10:00:00.000Z',
+      updatedAt: '2026-02-28T10:00:00.000Z',
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects period demand day out of range', () => {
+    const result = createPeriodRequestSchema.safeParse({
+      name: 'Marzo 2026',
+      startsOn: '2026-03-01',
+      endsOn: '2026-03-31',
+      demands: [{ dayId: '2026-04-01', requiredDoctors: 2 }],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts replace period demands payload', () => {
+    const result = replacePeriodDemandsRequestSchema.safeParse({
+      demands: [{ dayId: '2026-03-03', requiredDoctors: 2 }],
+    });
+
+    expect(result.success).toBe(true);
+  });
+
   it('accepts create sprint payload', () => {
     const result = createSprintRequestSchema.safeParse({
       name: 'Guardias Marzo',
-      startsOn: '2026-03-01',
-      endsOn: '2026-03-31',
+      periodId: 'per-1',
       globalConfig: {
         requiredDoctorsPerShift: 2,
         maxDaysPerDoctorDefault: 8,
       },
-      doctors: [{ id: 'd1', maxTotalDaysOverride: 7 }],
+      doctorIds: ['doc-1'],
     });
 
     expect(result.success).toBe(true);
@@ -166,14 +226,13 @@ describe('sprint schemas', () => {
     const result = sprintSchema.safeParse({
       id: 'spr-1',
       name: 'Guardias Marzo',
-      startsOn: '2026-03-01',
-      endsOn: '2026-03-31',
+      periodId: 'per-1',
       status: 'draft',
       globalConfig: {
         requiredDoctorsPerShift: 2,
         maxDaysPerDoctorDefault: 8,
       },
-      doctors: [{ id: 'd1' }],
+      doctorIds: ['doc-1'],
       availability: [],
       createdAt: '2026-02-28T10:00:00.000Z',
       updatedAt: '2026-02-28T10:00:00.000Z',

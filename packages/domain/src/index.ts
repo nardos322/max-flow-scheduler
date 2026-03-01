@@ -155,16 +155,132 @@ export const solveResponseSchema = z.object({
   minCut: minCutSchema.optional(),
 });
 
+export const doctorCatalogSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  active: z.boolean(),
+  maxTotalDaysDefault: z.number().int().positive().optional(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+export const createDoctorRequestSchema = z.object({
+  name: z.string().min(1),
+  active: z.boolean().optional(),
+  maxTotalDaysDefault: z.number().int().positive().optional(),
+});
+
+export const updateDoctorRequestSchema = z
+  .object({
+    name: z.string().min(1).optional(),
+    active: z.boolean().optional(),
+    maxTotalDaysDefault: z.number().int().positive().optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, {
+    message: 'At least one field must be provided.',
+  });
+
+export const periodDemandSchema = z.object({
+  dayId: z.string().date(),
+  requiredDoctors: z.number().int().positive(),
+});
+
+export const periodCatalogSchema = z
+  .object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    startsOn: z.string().date(),
+    endsOn: z.string().date(),
+    demands: z.array(periodDemandSchema),
+    createdAt: z.string().datetime(),
+    updatedAt: z.string().datetime(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.startsOn > value.endsOn) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['endsOn'],
+        message: 'Period end must be on or after start.',
+      });
+    }
+
+    const seen = new Set<string>();
+    value.demands.forEach((demand, index) => {
+      if (seen.has(demand.dayId)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['demands', index, 'dayId'],
+          message: `Duplicate demand day '${demand.dayId}'.`,
+        });
+      }
+      seen.add(demand.dayId);
+
+      if (demand.dayId < value.startsOn || demand.dayId > value.endsOn) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['demands', index, 'dayId'],
+          message: `Demand day '${demand.dayId}' is outside period range.`,
+        });
+      }
+    });
+  });
+
+export const createPeriodRequestSchema = z
+  .object({
+    name: z.string().min(1),
+    startsOn: z.string().date(),
+    endsOn: z.string().date(),
+    demands: z.array(periodDemandSchema).default([]),
+  })
+  .superRefine((value, ctx) => {
+    if (value.startsOn > value.endsOn) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['endsOn'],
+        message: 'Period end must be on or after start.',
+      });
+    }
+
+    const seen = new Set<string>();
+    value.demands.forEach((demand, index) => {
+      if (seen.has(demand.dayId)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['demands', index, 'dayId'],
+          message: `Duplicate demand day '${demand.dayId}'.`,
+        });
+      }
+      seen.add(demand.dayId);
+
+      if (demand.dayId < value.startsOn || demand.dayId > value.endsOn) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['demands', index, 'dayId'],
+          message: `Demand day '${demand.dayId}' is outside period range.`,
+        });
+      }
+    });
+  });
+
+export const updatePeriodRequestSchema = z
+  .object({
+    name: z.string().min(1).optional(),
+    startsOn: z.string().date().optional(),
+    endsOn: z.string().date().optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, {
+    message: 'At least one field must be provided.',
+  });
+
+export const replacePeriodDemandsRequestSchema = z.object({
+  demands: z.array(periodDemandSchema),
+});
+
 export const sprintStatusSchema = z.enum(['draft', 'ready-to-solve', 'solved']);
 
 export const sprintGlobalConfigSchema = z.object({
   requiredDoctorsPerShift: z.number().int().positive(),
   maxDaysPerDoctorDefault: z.number().int().positive(),
-});
-
-export const sprintDoctorSchema = z.object({
-  id: z.string().min(1),
-  maxTotalDaysOverride: z.number().int().positive().optional(),
 });
 
 export const userRoleSchema = z.enum(['doctor', 'planner']);
@@ -225,11 +341,10 @@ export const plannerOverrideAvailabilityRequestSchema = z
 export const sprintSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  startsOn: z.string().date(),
-  endsOn: z.string().date(),
+  periodId: z.string().min(1),
   status: sprintStatusSchema,
   globalConfig: sprintGlobalConfigSchema,
-  doctors: z.array(sprintDoctorSchema),
+  doctorIds: z.array(z.string().min(1)),
   availability: z.array(sprintAvailabilityEntrySchema),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
@@ -237,10 +352,9 @@ export const sprintSchema = z.object({
 
 export const createSprintRequestSchema = z.object({
   name: z.string().min(1),
-  startsOn: z.string().date(),
-  endsOn: z.string().date(),
+  periodId: z.string().min(1),
   globalConfig: sprintGlobalConfigSchema,
-  doctors: z.array(sprintDoctorSchema).default([]),
+  doctorIds: z.array(z.string().min(1)).default([]),
 });
 
 export const updateSprintGlobalConfigRequestSchema = z.object({
@@ -274,9 +388,16 @@ export const runSprintSolveRequestSchema = z.object({
 
 export type SolveRequest = z.infer<typeof solveRequestSchema>;
 export type SolveResponse = z.infer<typeof solveResponseSchema>;
+export type DoctorCatalog = z.infer<typeof doctorCatalogSchema>;
+export type CreateDoctorRequest = z.infer<typeof createDoctorRequestSchema>;
+export type UpdateDoctorRequest = z.infer<typeof updateDoctorRequestSchema>;
+export type PeriodDemand = z.infer<typeof periodDemandSchema>;
+export type PeriodCatalog = z.infer<typeof periodCatalogSchema>;
+export type CreatePeriodRequest = z.infer<typeof createPeriodRequestSchema>;
+export type UpdatePeriodRequest = z.infer<typeof updatePeriodRequestSchema>;
+export type ReplacePeriodDemandsRequest = z.infer<typeof replacePeriodDemandsRequestSchema>;
 export type Sprint = z.infer<typeof sprintSchema>;
 export type SprintGlobalConfig = z.infer<typeof sprintGlobalConfigSchema>;
-export type SprintDoctor = z.infer<typeof sprintDoctorSchema>;
 export type UserRole = z.infer<typeof userRoleSchema>;
 export type SprintAvailabilityEntry = z.infer<typeof sprintAvailabilityEntrySchema>;
 export type AvailabilityDay = z.infer<typeof availabilityDaySchema>;

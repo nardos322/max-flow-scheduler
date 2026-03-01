@@ -30,34 +30,35 @@ enum RunStatus {
 model Sprint {
   id                       String              @id
   name                     String
-  startsOn                 String
-  endsOn                   String
+  periodId                 String
   status                   SprintStatus
   requiredDoctorsPerShift  Int
   maxDaysPerDoctorDefault  Int
   createdAt                DateTime            @default(now())
   updatedAt                DateTime            @updatedAt
+  period                   Period              @relation(fields: [periodId], references: [id], onDelete: Restrict)
   doctors                  SprintDoctor[]
   availabilityEntries      SprintAvailability[]
   runs                     SprintRun[]
 
   @@map("sprints")
+  @@index([periodId], map: "idx_sprints_period_id")
   @@index([status], map: "idx_sprints_status")
-  @@index([startsOn, endsOn], map: "idx_sprints_date_range")
 }
 
 model SprintDoctor {
   id                    String   @id
   sprintId              String
   doctorId              String
-  maxTotalDaysOverride  Int?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
   sprint                Sprint   @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+  doctor                Doctor   @relation(fields: [doctorId], references: [id], onDelete: Restrict)
 
   @@map("sprint_doctors")
   @@unique([sprintId, doctorId], map: "uq_sprint_doctors_sprint_doctor")
   @@index([sprintId], map: "idx_sprint_doctors_sprint_id")
+  @@index([doctorId], map: "idx_sprint_doctors_doctor_id")
 }
 
 model SprintAvailability {
@@ -71,6 +72,8 @@ model SprintAvailability {
   updatedByRole   UserRole
   updatedAt       DateTime
   sprint          Sprint                   @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+  doctor          Doctor                   @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+  period          Period                   @relation(fields: [periodId], references: [id], onDelete: Restrict)
 
   @@map("sprint_availability")
   @@unique([sprintId, doctorId, periodId, dayId], map: "uq_sprint_availability_entry")
@@ -92,4 +95,47 @@ model SprintRun {
 
   @@map("sprint_runs")
   @@index([sprintId, executedAt], map: "idx_sprint_runs_sprint_executed_at")
+}
+
+model Doctor {
+  id                   String              @id
+  name                 String
+  active               Boolean
+  maxTotalDaysDefault  Int?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  sprintLinks          SprintDoctor[]
+  availabilityEntries  SprintAvailability[]
+
+  @@map("doctors")
+  @@index([active], map: "idx_doctors_active")
+}
+
+model Period {
+  id                   String              @id
+  name                 String
+  startsOn             String
+  endsOn               String
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  demands              PeriodDemand[]
+  sprints              Sprint[]
+  availabilityEntries  SprintAvailability[]
+
+  @@map("periods")
+  @@index([startsOn, endsOn], map: "idx_periods_date_range")
+}
+
+model PeriodDemand {
+  id              String   @id
+  periodId        String
+  dayId           String
+  requiredDoctors Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  period          Period   @relation(fields: [periodId], references: [id], onDelete: Cascade)
+
+  @@map("period_demands")
+  @@unique([periodId, dayId], map: "uq_period_demands_period_day")
+  @@index([periodId], map: "idx_period_demands_period_id")
 }

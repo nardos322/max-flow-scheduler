@@ -37,6 +37,21 @@ export const setDoctorAvailabilityController: RequestHandler = async (req, res, 
         return;
       }
 
+      if (result.error === 'PERIOD_NOT_FOUND') {
+        next(new HttpError(404, { error: 'Period not found for sprint' }));
+        return;
+      }
+
+      if (result.error === 'PERIOD_MISMATCH') {
+        next(new HttpError(400, { error: 'Availability period must match sprint period' }));
+        return;
+      }
+
+      if (result.error === 'DAY_OUT_OF_RANGE') {
+        next(new HttpError(400, { error: 'Availability day is outside sprint period range' }));
+        return;
+      }
+
       next(new HttpError(404, { error: 'Doctor not found in sprint' }));
       return;
     }
@@ -71,6 +86,21 @@ export const plannerOverrideAvailabilityController: RequestHandler = async (req,
     if ('error' in result) {
       if (result.error === 'SPRINT_NOT_FOUND') {
         next(new HttpError(404, { error: 'Sprint not found' }));
+        return;
+      }
+
+      if (result.error === 'PERIOD_NOT_FOUND') {
+        next(new HttpError(404, { error: 'Period not found for sprint' }));
+        return;
+      }
+
+      if (result.error === 'PERIOD_MISMATCH') {
+        next(new HttpError(400, { error: 'Availability period must match sprint period' }));
+        return;
+      }
+
+      if (result.error === 'DAY_OUT_OF_RANGE') {
+        next(new HttpError(400, { error: 'Availability day is outside sprint period range' }));
         return;
       }
 

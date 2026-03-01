@@ -12,13 +12,24 @@ import {
   validateSetDoctorAvailabilityMiddleware,
 } from '../src/middlewares/sprint/validate-sprint-availability.middleware.js';
 import { validateCreateSprintMiddleware } from '../src/middlewares/sprint/validate-sprint.middleware.js';
+import { clearDoctorStore, createDoctor } from '../src/services/doctor/doctor.repository.js';
+import { clearPeriodStore, createPeriod } from '../src/services/period/period.repository.js';
 import { clearSprintStore } from '../src/services/sprint/sprint.repository.js';
 
 function signTestJwt(claims: Record<string, unknown>, secret: string): string {
   return jwt.sign(claims, secret, { algorithm: 'HS256' });
 }
 
-async function createBaseSprint(): Promise<{ id: string }> {
+async function createBaseSprint(): Promise<{ id: string; doctorAId: string; doctorBId: string; periodId: string }> {
+  const doctorA = await createDoctor({ name: 'Dr. Uno', active: true, maxTotalDaysDefault: 8 });
+  const doctorB = await createDoctor({ name: 'Dr. Dos', active: true, maxTotalDaysDefault: 8 });
+  const period = await createPeriod({
+    name: 'Julio 2026',
+    startsOn: '2026-07-01',
+    endsOn: '2026-07-31',
+    demands: [{ dayId: '2026-07-01', requiredDoctors: 1 }],
+  });
+
   const next = vi.fn();
   const res = { status: vi.fn().mockReturnThis(), json: vi.fn(), locals: {} };
 
@@ -26,10 +37,9 @@ async function createBaseSprint(): Promise<{ id: string }> {
     {
       body: {
         name: 'Guardias Julio',
-        startsOn: '2026-07-01',
-        endsOn: '2026-07-31',
+        periodId: period.id,
         globalConfig: { requiredDoctorsPerShift: 1, maxDaysPerDoctorDefault: 8 },
-        doctors: [{ id: 'd1' }, { id: 'd2' }],
+        doctorIds: [doctorA.id, doctorB.id],
       },
     } as never,
     res as never,
@@ -43,7 +53,8 @@ async function createBaseSprint(): Promise<{ id: string }> {
     throw new Error('Expected sprint create response');
   }
 
-  return createdCall[0] as { id: string };
+  const created = createdCall[0] as { id: string };
+  return { id: created.id, doctorAId: doctorA.id, doctorBId: doctorB.id, periodId: period.id };
 }
 
 describe('sprint availability controllers', () => {
@@ -52,6 +63,8 @@ describe('sprint availability controllers', () => {
     process.env.JWT_ISSUER = 'scheduler-api-tests';
     process.env.JWT_AUDIENCE = 'scheduler-api';
     await clearSprintStore();
+    await clearDoctorStore();
+    await clearPeriodStore();
   });
 
   it('allows doctor self-service availability updates', async () => {
@@ -61,7 +74,7 @@ describe('sprint availability controllers', () => {
       headers: {
         authorization: `Bearer ${signTestJwt(
           {
-            sub: 'd1',
+            sub: created.doctorAId,
             role: 'doctor',
             iss: 'scheduler-api-tests',
             aud: 'scheduler-api',
@@ -72,11 +85,11 @@ describe('sprint availability controllers', () => {
       },
       body: {
         availability: [
-          { periodId: 'p1', dayId: 'day-1' },
-          { periodId: 'p1', dayId: 'day-2' },
+          { periodId: created.periodId, dayId: '2026-07-01' },
+          { periodId: created.periodId, dayId: '2026-07-02' },
         ],
       },
-      params: { sprintId: created.id, doctorId: 'd1' },
+      params: { sprintId: created.id, doctorId: created.doctorAId },
     };
 
     const res = { status: vi.fn().mockReturnThis(), json: vi.fn(), locals: {} };
@@ -103,10 +116,10 @@ describe('sprint availability controllers', () => {
         id: created.id,
         availability: expect.arrayContaining([
           expect.objectContaining({
-            doctorId: 'd1',
+            doctorId: created.doctorAId,
             source: 'doctor-self-service',
             updatedByRole: 'doctor',
-            updatedByUserId: 'd1',
+            updatedByUserId: created.doctorAId,
           }),
         ]),
       }),
@@ -120,7 +133,7 @@ describe('sprint availability controllers', () => {
       headers: {
         authorization: `Bearer ${signTestJwt(
           {
-            sub: 'd1',
+            sub: created.doctorAId,
             role: 'doctor',
             iss: 'scheduler-api-tests',
             aud: 'scheduler-api',
@@ -130,9 +143,9 @@ describe('sprint availability controllers', () => {
         )}`,
       },
       body: {
-        availability: [{ periodId: 'p1', dayId: 'day-1' }],
+        availability: [{ periodId: created.periodId, dayId: '2026-07-01' }],
       },
-      params: { sprintId: created.id, doctorId: 'd2' },
+      params: { sprintId: created.id, doctorId: created.doctorBId },
     };
 
     const res = { locals: {} };
@@ -164,8 +177,8 @@ describe('sprint availability controllers', () => {
         )}`,
       },
       body: {
-        doctorId: 'd2',
-        availability: [{ periodId: 'p2', dayId: 'day-8' }],
+        doctorId: created.doctorBId,
+        availability: [{ periodId: created.periodId, dayId: '2026-07-08' }],
       },
       params: { sprintId: created.id },
     };
@@ -185,7 +198,7 @@ describe('sprint availability controllers', () => {
       expect.objectContaining({
         availability: expect.arrayContaining([
           expect.objectContaining({
-            doctorId: 'd2',
+            doctorId: created.doctorBId,
             source: 'planner-override',
             updatedByRole: 'planner',
             updatedByUserId: 'planner-1',
@@ -196,11 +209,13 @@ describe('sprint availability controllers', () => {
   });
 
   it('rejects override endpoint for doctor role', async () => {
+    const created = await createBaseSprint();
+
     const req = {
       headers: {
         authorization: `Bearer ${signTestJwt(
           {
-            sub: 'd1',
+            sub: created.doctorAId,
             role: 'doctor',
             iss: 'scheduler-api-tests',
             aud: 'scheduler-api',
@@ -228,7 +243,7 @@ describe('sprint availability controllers', () => {
       headers: {
         authorization: `Bearer ${signTestJwt(
           {
-            sub: 'd1',
+            sub: created.doctorAId,
             role: 'doctor',
             iss: 'scheduler-api-tests',
             aud: 'scheduler-api',
@@ -238,9 +253,9 @@ describe('sprint availability controllers', () => {
         )}`,
       },
       body: {
-        availability: [{ periodId: 'p1', dayId: 'day-1' }],
+        availability: [{ periodId: created.periodId, dayId: '2026-07-01' }],
       },
-      params: { sprintId: created.id, doctorId: 'd1' },
+      params: { sprintId: created.id, doctorId: created.doctorAId },
     };
 
     const updateRes = { status: vi.fn().mockReturnThis(), json: vi.fn(), locals: {} };
@@ -259,7 +274,7 @@ describe('sprint availability controllers', () => {
     expect(listRes.status).toHaveBeenCalledWith(200);
     expect(listRes.json).toHaveBeenCalledWith({
       items: expect.arrayContaining([
-        expect.objectContaining({ doctorId: 'd1', periodId: 'p1', dayId: 'day-1' }),
+        expect.objectContaining({ doctorId: created.doctorAId, periodId: created.periodId, dayId: '2026-07-01' }),
       ]),
     });
   });

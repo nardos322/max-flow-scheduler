@@ -8,16 +8,28 @@ import {
 } from '../src/controllers/sprint/sprint-run.controller.js';
 import { createSprintController } from '../src/controllers/sprint/sprint.controller.js';
 import { validateCreateSprintMiddleware } from '../src/middlewares/sprint/validate-sprint.middleware.js';
+import { clearDoctorStore, createDoctor } from '../src/services/doctor/doctor.repository.js';
+import { clearPeriodStore, createPeriod } from '../src/services/period/period.repository.js';
 import { clearSprintStore } from '../src/services/sprint/sprint.repository.js';
 import { clearSprintRunStore } from '../src/services/sprint/sprint-run.repository.js';
 
 describe('sprint run controllers', () => {
   beforeEach(async () => {
-    await clearSprintStore();
     await clearSprintRunStore();
+    await clearSprintStore();
+    await clearDoctorStore();
+    await clearPeriodStore();
   });
 
   it('requires sprint to be ready before solving', async () => {
+    const doctor = await createDoctor({ name: 'Dr. Uno', active: true, maxTotalDaysDefault: 8 });
+    const period = await createPeriod({
+      name: 'Mayo 2026',
+      startsOn: '2026-05-01',
+      endsOn: '2026-05-31',
+      demands: [{ dayId: '2026-05-01', requiredDoctors: 1 }],
+    });
+
     const next = vi.fn();
     const createRes = { status: vi.fn().mockReturnThis(), json: vi.fn(), locals: {} };
 
@@ -25,10 +37,9 @@ describe('sprint run controllers', () => {
       {
         body: {
           name: 'Guardias Mayo',
-          startsOn: '2026-05-01',
-          endsOn: '2026-05-31',
+          periodId: period.id,
           globalConfig: { requiredDoctorsPerShift: 1, maxDaysPerDoctorDefault: 8 },
-          doctors: [{ id: 'd1' }],
+          doctorIds: [doctor.id],
         },
       } as never,
       createRes as never,
@@ -58,6 +69,14 @@ describe('sprint run controllers', () => {
   });
 
   it('marks sprint ready, runs solve, and stores run history', async () => {
+    const doctor = await createDoctor({ name: 'Dr. Uno', active: true, maxTotalDaysDefault: 8 });
+    const period = await createPeriod({
+      name: 'Junio 2026',
+      startsOn: '2026-06-01',
+      endsOn: '2026-06-30',
+      demands: [{ dayId: '2026-06-01', requiredDoctors: 1 }],
+    });
+
     const next = vi.fn();
     const createRes = { status: vi.fn().mockReturnThis(), json: vi.fn(), locals: {} };
 
@@ -65,10 +84,9 @@ describe('sprint run controllers', () => {
       {
         body: {
           name: 'Guardias Junio',
-          startsOn: '2026-06-01',
-          endsOn: '2026-06-30',
+          periodId: period.id,
           globalConfig: { requiredDoctorsPerShift: 1, maxDaysPerDoctorDefault: 8 },
-          doctors: [{ id: 'd1' }],
+          doctorIds: [doctor.id],
         },
       } as never,
       createRes as never,
@@ -130,6 +148,14 @@ describe('sprint run controllers', () => {
   });
 
   it('stores failed run when solver response mismatches shared contract', async () => {
+    const doctor = await createDoctor({ name: 'Dr. Uno', active: true, maxTotalDaysDefault: 8 });
+    const period = await createPeriod({
+      name: 'Julio 2026',
+      startsOn: '2026-07-01',
+      endsOn: '2026-07-31',
+      demands: [{ dayId: '2026-07-01', requiredDoctors: 1 }],
+    });
+
     const next = vi.fn();
     const createRes = { status: vi.fn().mockReturnThis(), json: vi.fn(), locals: {} };
 
@@ -137,10 +163,9 @@ describe('sprint run controllers', () => {
       {
         body: {
           name: 'Guardias Contrato',
-          startsOn: '2026-07-01',
-          endsOn: '2026-07-31',
+          periodId: period.id,
           globalConfig: { requiredDoctorsPerShift: 1, maxDaysPerDoctorDefault: 8 },
-          doctors: [{ id: 'd1' }],
+          doctorIds: [doctor.id],
         },
       } as never,
       createRes as never,
