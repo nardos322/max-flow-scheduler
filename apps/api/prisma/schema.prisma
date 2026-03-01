@@ -1,0 +1,17 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Bootstrap table to validate DB wiring before domain models are migrated.
+model BootstrapState {
+  id        Int      @id
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("bootstrap_state")
+}

@@ -24,6 +24,18 @@ Monorepo para planificacion de medicos en vacaciones usando un solver de max-flo
 - `pnpm test`
 - `pnpm test:engine-cpp`
 
+## Bootstrap de base de datos (API)
+- Prisma schema: `apps/api/prisma/schema.prisma`
+- Cliente Prisma: `apps/api/src/lib/prisma.ts`
+- Scripts:
+  - `pnpm --filter @scheduler/api run db:generate`
+  - `pnpm --filter @scheduler/api run db:migrate -- --name init`
+  - `pnpm --filter @scheduler/api run db:migrate:deploy`
+  - `pnpm --filter @scheduler/api run db:studio`
+- Ejemplo local de URL SQLite:
+  - `DATABASE_URL="file:./dev.db"`
+
 ## Nota MVP
 - Integracion API -> engine via CLI (`stdin/stdout`).
-- Sin base de datos ni autenticacion en esta etapa.
+- Autenticacion JWT basica en endpoints de disponibilidad.
+- Persistencia en transicion a Prisma + SQLite.
