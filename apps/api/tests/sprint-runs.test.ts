@@ -127,4 +127,79 @@ describe('sprint run controllers', () => {
       }),
     );
   });
+
+  it('stores failed run when solver response mismatches shared contract', async () => {
+    const next = vi.fn();
+    const createRes = { status: vi.fn().mockReturnThis(), json: vi.fn(), locals: {} };
+
+    await validateCreateSprintMiddleware(
+      {
+        body: {
+          name: 'Guardias Contrato',
+          startsOn: '2026-07-01',
+          endsOn: '2026-07-31',
+          globalConfig: { requiredDoctorsPerShift: 1, maxDaysPerDoctorDefault: 8 },
+          doctors: [{ id: 'd1' }],
+        },
+      } as never,
+      createRes as never,
+      next,
+    );
+    await createSprintController({} as never, createRes as never, next);
+
+    const createdCall = createRes.json.mock.calls[0];
+    if (!createdCall) {
+      throw new Error('Expected sprint create response');
+    }
+    const created = createdCall[0] as { id: string };
+
+    const markReadyRes = { status: vi.fn().mockReturnThis(), json: vi.fn(), locals: { markReadyRequest: { status: 'ready-to-solve' } } };
+    await markSprintReadyController({ params: { sprintId: created.id } } as never, markReadyRes as never, next);
+
+    const solveRes = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn(),
+      locals: {
+        runSolveRequest: {
+          request: {
+            contractVersion: '1.0',
+            doctors: [{ id: 'd1', maxTotalDays: 1 }],
+            periods: [{ id: 'p1', dayIds: ['day-1'] }],
+            demands: [{ dayId: 'day-1', requiredDoctors: 1 }],
+            availability: [{ doctorId: 'd1', periodId: 'p1', dayId: 'day-1' }],
+          },
+        },
+      },
+    };
+
+    const runSolveWithInvalidContract = createRunSprintSolveController(async () => ({
+      contractVersion: '1.0',
+      isFeasible: true,
+      uncoveredDays: [],
+      assignments: [{ doctorId: 'd1', dayId: 'day-1', periodId: 'p1' }],
+    }));
+
+    await runSolveWithInvalidContract({ params: { sprintId: created.id } } as never, solveRes as never, next);
+
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 500 }));
+    expect(solveRes.status).not.toHaveBeenCalled();
+
+    const historyRes = { status: vi.fn().mockReturnThis(), json: vi.fn() };
+    await listSprintRunsController({ params: { sprintId: created.id } } as never, historyRes as never, next);
+
+    expect(historyRes.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        items: expect.arrayContaining([
+          expect.objectContaining({
+            sprintId: created.id,
+            status: 'failed',
+            error: expect.objectContaining({
+              code: 'INTERNAL_CONTRACT_MISMATCH',
+              message: 'Internal contract mismatch',
+            }),
+          }),
+        ]),
+      }),
+    );
+  });
 });

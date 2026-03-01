@@ -1,5 +1,5 @@
 import type { RequestHandler } from 'express';
-import type { SolveRequest, SolveResponse } from '@scheduler/domain';
+import { solveResponseSchema, type SolveRequest, type SolveResponse } from '@scheduler/domain';
 import { HttpError } from '../../errors/http.error.js';
 import { SolverError } from '../../errors/solver.error.js';
 import type { SprintRunLocals } from '../../middlewares/sprint/validate-sprint-run.middleware.js';
@@ -79,12 +79,24 @@ export function createRunSprintSolveController(solveForSprint: SolveForSprint): 
 
     try {
       const solverResponse = await solveForSprint(payload.request);
-      const run = await registerSucceededSprintRun(sprintId, payload.request, solverResponse);
+      const parsedResponse = solveResponseSchema.safeParse(solverResponse);
+      if (!parsedResponse.success) {
+        await registerFailedSprintRun(
+          sprintId,
+          payload.request,
+          'INTERNAL_CONTRACT_MISMATCH',
+          'Internal contract mismatch',
+        );
+        next(new HttpError(500, { error: 'Internal contract mismatch' }));
+        return;
+      }
+
+      const run = await registerSucceededSprintRun(sprintId, payload.request, parsedResponse.data);
       await markSprintSolved(sprintId);
 
       res.status(200).json({
         run,
-        result: solverResponse,
+        result: parsedResponse.data,
       });
     } catch (error) {
       if (error instanceof EngineRunnerError) {

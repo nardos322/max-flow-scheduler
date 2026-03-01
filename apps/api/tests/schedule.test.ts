@@ -101,4 +101,23 @@ describe('solveScheduleController', () => {
     expect(error.code).toBe('TIMEOUT');
     expect(error.message).toBe('Solver timed out');
   });
+
+  it('returns 500 when solver response breaks contract', async () => {
+    const status = vi.fn().mockReturnThis();
+    const json = vi.fn();
+    const next = vi.fn();
+    const res = { status, json, locals: { solveRequest: {} } };
+    const solveScheduleController = createSolveScheduleController(async () => ({
+      contractVersion: '1.0',
+      isFeasible: true,
+      uncoveredDays: [],
+      assignments: [{ doctorId: 'd1', dayId: 'day-1', periodId: 'p1' }],
+    }));
+
+    await solveScheduleController({} as never, res as never, next);
+
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 500 }));
+    expect(status).not.toHaveBeenCalled();
+    expect(json).not.toHaveBeenCalled();
+  });
 });

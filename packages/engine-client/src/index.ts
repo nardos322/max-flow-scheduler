@@ -1,7 +1,16 @@
 import { spawn } from 'node:child_process';
-import type { SolveRequest, SolveResponse } from '@scheduler/domain';
+import { solveResponseSchema, type SolveRequest, type SolveResponse } from '@scheduler/domain';
 
 const DEFAULT_ENGINE_BINARY = 'services/engine-cpp/build/scheduler_engine';
+
+export function parseSolveResponsePayload(payload: unknown): SolveResponse {
+  const parsed = solveResponseSchema.safeParse(payload);
+  if (!parsed.success) {
+    throw new Error('Engine response contract mismatch');
+  }
+
+  return parsed.data;
+}
 
 export async function solveWithEngine(
   request: SolveRequest,
@@ -28,10 +37,18 @@ export async function solveWithEngine(
         reject(new Error(`Engine exited with code ${code}: ${stderr}`));
         return;
       }
+      let payload: unknown;
       try {
-        resolve(JSON.parse(stdout) as SolveResponse);
+        payload = JSON.parse(stdout) as unknown;
       } catch (error) {
         reject(new Error(`Engine output is not valid JSON: ${String(error)}`));
+        return;
+      }
+
+      try {
+        resolve(parseSolveResponsePayload(payload));
+      } catch (error) {
+        reject(error);
       }
     });
 

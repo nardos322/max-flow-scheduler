@@ -14,17 +14,16 @@ _Ultima actualizacion manual: 2026-03-01 (alineado con evidencia en codigo/repos
 - Tareas frontend que quedan en espera por esta decision: `T-502.1`, `T-502.2`, `T-502.3`, `T-552.1`, `T-552.2`, `T-553.3`.
 
 ### Cola activa backend-only
-1. `T-201.3` Validar compatibilidad multi-modulo.
-2. `T-202.1` Crear fixtures happy/edge/invalid.
-3. `T-202.2` Definir expected outcomes por fixture.
-4. `T-301.3` Revisar formalmente el modelo implementado.
-5. `T-601.1` Headers, rate-limit, body limits, sanitizacion de errores.
-6. `T-601.2` Secret scanning y politica de secretos.
-7. `T-602.1` Ejecutar benchmark matrix final.
-8. `T-602.2` Definir budgets y alarmas de regresion.
-9. `T-603.1` Dockerizar API/engine.
-10. `T-603.2` Pipeline de release + rollback.
-11. `T-603.3` Runbook/ADR/changelog tecnico.
+1. `T-202.1` Crear fixtures happy/edge/invalid.
+2. `T-202.2` Definir expected outcomes por fixture.
+3. `T-301.3` Revisar formalmente el modelo implementado.
+4. `T-601.1` Headers, rate-limit, body limits, sanitizacion de errores.
+5. `T-601.2` Secret scanning y politica de secretos.
+6. `T-602.1` Ejecutar benchmark matrix final.
+7. `T-602.2` Definir budgets y alarmas de regresion.
+8. `T-603.1` Dockerizar API/engine.
+9. `T-603.2` Pipeline de release + rollback.
+10. `T-603.3` Runbook/ADR/changelog tecnico.
 
 ## EPIC E1 - Foundation Monorepo (Semanas 1-2)
 ### US-101 Definir arquitectura y alcance (P0, 5)
@@ -65,7 +64,7 @@ _Ultima actualizacion manual: 2026-03-01 (alineado con evidencia en codigo/repos
 ### US-201 Contratos Zod compartidos (P0, 8)
 - T-201.1 Crear `packages/domain` con schemas request/response solver. Owner: `api-contracts`. Estado: `done`
 - T-201.2 Versionar contrato v1. Owner: `api-contracts`. Estado: `done`
-- T-201.3 Validar compatibilidad multi-modulo. Owner: `integration-orchestrator`. Estado: `in-progress`
+- T-201.3 Validar compatibilidad multi-modulo. Owner: `integration-orchestrator`. Estado: `done`
 - Done cuando:
   - Contrato publicado y consumible por API/web
 
