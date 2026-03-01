@@ -1,0 +1,27 @@
+[
+  {
+    "id": "happy.basic",
+    "requestFile": "happy.basic.request.json",
+    "expectSchemaValid": true
+  },
+  {
+    "id": "edge.one-doctor-multi-period",
+    "requestFile": "edge.one-doctor-multi-period.request.json",
+    "expectSchemaValid": true
+  },
+  {
+    "id": "invalid.duplicate-doctor",
+    "requestFile": "invalid.duplicate-doctor.request.json",
+    "expectSchemaValid": false
+  },
+  {
+    "id": "baseline.feasible",
+    "requestFile": "feasible.request.json",
+    "expectSchemaValid": true
+  },
+  {
+    "id": "baseline.infeasible",
+    "requestFile": "infeasible.request.json",
+    "expectSchemaValid": true
+  }
+]

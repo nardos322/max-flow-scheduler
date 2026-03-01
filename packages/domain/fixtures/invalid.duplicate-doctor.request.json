@@ -1,0 +1,16 @@
+{
+  "contractVersion": "1.0",
+  "doctors": [
+    { "id": "d1", "maxTotalDays": 1 },
+    { "id": "d1", "maxTotalDays": 1 }
+  ],
+  "periods": [
+    { "id": "p1", "dayIds": ["day-1"] }
+  ],
+  "demands": [
+    { "dayId": "day-1", "requiredDoctors": 1 }
+  ],
+  "availability": [
+    { "doctorId": "d1", "periodId": "p1", "dayId": "day-1" }
+  ]
+}

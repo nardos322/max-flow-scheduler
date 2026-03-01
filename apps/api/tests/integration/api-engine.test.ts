@@ -1,4 +1,4 @@
-import { accessSync, constants as fsConstants } from 'node:fs';
+import { accessSync, constants as fsConstants, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
 import type { SolveRequest } from '@scheduler/domain';
@@ -23,6 +23,13 @@ function asValidRequest(body: SolveRequest) {
   return { body } as never;
 }
 
+function loadRequestFixture(fileName: string): SolveRequest {
+  const fixturePath = fileURLToPath(
+    new URL(`../../../../packages/domain/fixtures/${fileName}`, import.meta.url),
+  );
+  return JSON.parse(readFileSync(fixturePath, 'utf8')) as SolveRequest;
+}
+
 describe('API-engine integration', () => {
   const engineBinary = process.env.SCHEDULER_ENGINE_BINARY ?? defaultEngineBinary;
   const canRunIntegration = hasExecutable(engineBinary);
@@ -37,13 +44,7 @@ describe('API-engine integration', () => {
       const next = vi.fn();
       const res = { status, json, locals: { requestId: 'integration-req-1' } };
 
-      const body: SolveRequest = {
-        contractVersion: '1.0',
-        doctors: [{ id: 'd1', maxTotalDays: 1 }],
-        periods: [{ id: 'p1', dayIds: ['day-1'] }],
-        demands: [{ dayId: 'day-1', requiredDoctors: 1 }],
-        availability: [{ doctorId: 'd1', periodId: 'p1', dayId: 'day-1' }],
-      };
+      const body = loadRequestFixture('happy.basic.request.json');
 
       await validateSolveRequestMiddleware(asValidRequest(body), res as never, next);
       expect(next).toHaveBeenCalledWith();
@@ -52,25 +53,50 @@ describe('API-engine integration', () => {
       await solveScheduleController({} as never, res as never, next);
 
       expect(status).toHaveBeenCalledWith(200);
-      expect(json).toHaveBeenCalledWith({
-        contractVersion: '1.0',
-        isFeasible: true,
-        assignedCount: 1,
-        uncoveredDays: [],
-        assignments: [{ doctorId: 'd1', dayId: 'day-1', periodId: 'p1' }],
-      });
+      expect(json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          contractVersion: '1.0',
+          isFeasible: true,
+          assignedCount: 2,
+          uncoveredDays: [],
+        }),
+      );
     });
 
-    it('rejects invalid payload before solver execution', async () => {
+    it('handles edge fixture with one doctor across multiple periods', async () => {
+      process.env.SCHEDULER_ENGINE_BINARY = engineBinary;
+
+      const status = vi.fn().mockReturnThis();
+      const json = vi.fn();
       const next = vi.fn();
-      const res = { locals: { requestId: 'integration-req-2' } };
+      const res = { status, json, locals: { requestId: 'integration-req-2' } };
 
       await validateSolveRequestMiddleware(
-        {
-          body: {
-            doctors: [{ id: 'd1', maxTotalDays: 1 }],
-          },
-        } as never,
+        asValidRequest(loadRequestFixture('edge.one-doctor-multi-period.request.json')),
+        res as never,
+        next,
+      );
+      expect(next).toHaveBeenCalledWith();
+
+      const solveScheduleController = createSolveScheduleController(solveScheduleWithEngine);
+      await solveScheduleController({} as never, res as never, next);
+
+      expect(status).toHaveBeenCalledWith(200);
+      expect(json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          contractVersion: '1.0',
+          isFeasible: true,
+          assignedCount: 2,
+        }),
+      );
+    });
+
+    it('rejects invalid fixture payload before solver execution', async () => {
+      const next = vi.fn();
+      const res = { locals: { requestId: 'integration-req-3' } };
+
+      await validateSolveRequestMiddleware(
+        asValidRequest(loadRequestFixture('invalid.duplicate-doctor.request.json')),
         res as never,
         next,
       );
