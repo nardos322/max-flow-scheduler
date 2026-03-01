@@ -1,27 +1,63 @@
 [
   {
     "id": "happy.basic",
+    "category": "happy",
     "requestFile": "happy.basic.request.json",
-    "expectSchemaValid": true
+    "expectSchemaValid": true,
+    "expectedSolver": {
+      "isFeasible": true,
+      "assignedCount": 2,
+      "uncoveredDaysCount": 0
+    }
   },
   {
     "id": "edge.one-doctor-multi-period",
+    "category": "edge",
     "requestFile": "edge.one-doctor-multi-period.request.json",
-    "expectSchemaValid": true
+    "expectSchemaValid": true,
+    "expectedSolver": {
+      "isFeasible": true,
+      "assignedCount": 2,
+      "uncoveredDaysCount": 0
+    }
+  },
+  {
+    "id": "edge.capacity-shortage",
+    "category": "edge",
+    "requestFile": "edge.capacity-shortage.request.json",
+    "expectSchemaValid": true,
+    "expectedSolver": {
+      "isFeasible": false,
+      "assignedCount": 1,
+      "uncoveredDaysCount": 1
+    }
   },
   {
     "id": "invalid.duplicate-doctor",
+    "category": "invalid",
     "requestFile": "invalid.duplicate-doctor.request.json",
     "expectSchemaValid": false
   },
   {
     "id": "baseline.feasible",
+    "category": "happy",
     "requestFile": "feasible.request.json",
-    "expectSchemaValid": true
+    "expectSchemaValid": true,
+    "expectedSolver": {
+      "isFeasible": true,
+      "assignedCount": 2,
+      "uncoveredDaysCount": 0
+    }
   },
   {
     "id": "baseline.infeasible",
+    "category": "edge",
     "requestFile": "infeasible.request.json",
-    "expectSchemaValid": true
+    "expectSchemaValid": true,
+    "expectedSolver": {
+      "isFeasible": false,
+      "assignedCount": 1,
+      "uncoveredDaysCount": 1
+    }
   }
 ]

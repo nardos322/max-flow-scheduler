@@ -14,15 +14,14 @@ _Ultima actualizacion manual: 2026-03-01 (alineado con evidencia en codigo/repos
 - Tareas frontend que quedan en espera por esta decision: `T-502.1`, `T-502.2`, `T-502.3`, `T-552.1`, `T-552.2`, `T-553.3`.
 
 ### Cola activa backend-only
-1. `T-202.2` Definir expected outcomes por fixture.
-2. `T-301.3` Revisar formalmente el modelo implementado.
-3. `T-601.1` Headers, rate-limit, body limits, sanitizacion de errores.
-4. `T-601.2` Secret scanning y politica de secretos.
-5. `T-602.1` Ejecutar benchmark matrix final.
-6. `T-602.2` Definir budgets y alarmas de regresion.
-7. `T-603.1` Dockerizar API/engine.
-8. `T-603.2` Pipeline de release + rollback.
-9. `T-603.3` Runbook/ADR/changelog tecnico.
+1. `T-301.3` Revisar formalmente el modelo implementado.
+2. `T-601.1` Headers, rate-limit, body limits, sanitizacion de errores.
+3. `T-601.2` Secret scanning y politica de secretos.
+4. `T-602.1` Ejecutar benchmark matrix final.
+5. `T-602.2` Definir budgets y alarmas de regresion.
+6. `T-603.1` Dockerizar API/engine.
+7. `T-603.2` Pipeline de release + rollback.
+8. `T-603.3` Runbook/ADR/changelog tecnico.
 
 ## EPIC E1 - Foundation Monorepo (Semanas 1-2)
 ### US-101 Definir arquitectura y alcance (P0, 5)
@@ -69,7 +68,7 @@ _Ultima actualizacion manual: 2026-03-01 (alineado con evidencia en codigo/repos
 
 ### US-202 Fixtures base (P1, 5)
 - T-202.1 Crear fixtures happy/edge/invalid. Owner: `data-fixtures`. Estado: `done`
-- T-202.2 Definir expected outcomes por fixture. Owner: `qa-reliability`. Estado: `todo`
+- T-202.2 Definir expected outcomes por fixture. Owner: `qa-reliability`. Estado: `done`
 - Done cuando:
   - Fixtures usados en al menos 2 suites (engine y API)
 

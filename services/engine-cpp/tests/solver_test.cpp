@@ -3,7 +3,8 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <unordered_set>
+#include <vector>
+#include <nlohmann/json.hpp>
 #include <scheduler/solver.hpp>
 
 namespace {
@@ -24,63 +25,64 @@ std::string ReadFixtureFile(const std::string& file_name) {
   return buffer.str();
 }
 
-TEST(SolverFlow, SolvesFeasibleScenarioFromSharedFixture) {
-  const std::string input = ReadFixtureFile("happy.basic.request.json");
+struct FixtureExpectation {
+  std::string id;
+  std::string request_file;
+  bool expect_schema_valid;
+  bool has_expected_solver;
+  bool expected_is_feasible;
+  int expected_assigned_count;
+  int expected_uncovered_days_count;
+};
 
-  const auto result = scheduler::Solve(input);
+std::vector<FixtureExpectation> LoadFixtureCatalog() {
+  const auto catalog_json = nlohmann::json::parse(ReadFixtureFile("catalog.json"));
+  std::vector<FixtureExpectation> fixtures;
 
-  EXPECT_TRUE(result.is_feasible);
-  EXPECT_EQ(result.assigned_count, 2);
-  EXPECT_TRUE(result.uncovered_days.empty());
-  EXPECT_EQ(result.assignments.size(), 2);
+  for (const auto& item : catalog_json) {
+    FixtureExpectation fixture{
+      item.at("id").get<std::string>(),
+      item.at("requestFile").get<std::string>(),
+      item.at("expectSchemaValid").get<bool>(),
+      item.contains("expectedSolver"),
+      false,
+      0,
+      0
+    };
 
-  std::unordered_set<std::string> assigned_days;
-  for (const auto& assignment : result.assignments) {
-    assigned_days.insert(assignment.day_id);
+    if (fixture.has_expected_solver) {
+      const auto& expected = item.at("expectedSolver");
+      fixture.expected_is_feasible = expected.at("isFeasible").get<bool>();
+      fixture.expected_assigned_count = expected.at("assignedCount").get<int>();
+      fixture.expected_uncovered_days_count = expected.at("uncoveredDaysCount").get<int>();
+    }
+
+    fixtures.push_back(fixture);
   }
 
-  EXPECT_TRUE(assigned_days.find("day-1") != assigned_days.end());
-  EXPECT_TRUE(assigned_days.find("day-2") != assigned_days.end());
+  return fixtures;
 }
 
-TEST(SolverFlow, DetectsOneDayPerPeriodInfeasibilityFromSharedFixture) {
-  const std::string input = ReadFixtureFile("infeasible.request.json");
+TEST(SolverFlow, MatchesExpectedOutcomesFromSharedFixtureCatalog) {
+  const auto fixtures = LoadFixtureCatalog();
+  int validated_count = 0;
 
-  const auto result = scheduler::Solve(input);
+  for (const auto& fixture : fixtures) {
+    if (!fixture.expect_schema_valid || !fixture.has_expected_solver) {
+      continue;
+    }
 
-  EXPECT_FALSE(result.is_feasible);
-  EXPECT_EQ(result.assigned_count, 1);
-  EXPECT_EQ(result.assignments.size(), 1);
-  EXPECT_EQ(result.uncovered_days.size(), 1);
-}
+    SCOPED_TRACE(fixture.id);
+    const auto result = scheduler::Solve(ReadFixtureFile(fixture.request_file));
 
-TEST(SolverFlow, DetectsCapacityShortage) {
-  const std::string input = R"json(
-  {
-    "contractVersion": "1.0",
-    "doctors": [
-      { "id": "d1", "maxTotalDays": 1 }
-    ],
-    "periods": [
-      { "id": "p1", "dayIds": ["day-1"] },
-      { "id": "p2", "dayIds": ["day-2"] }
-    ],
-    "demands": [
-      { "dayId": "day-1", "requiredDoctors": 1 },
-      { "dayId": "day-2", "requiredDoctors": 1 }
-    ],
-    "availability": [
-      { "doctorId": "d1", "periodId": "p1", "dayId": "day-1" },
-      { "doctorId": "d1", "periodId": "p2", "dayId": "day-2" }
-    ]
+    EXPECT_EQ(result.contract_version, "1.0");
+    EXPECT_EQ(result.is_feasible, fixture.expected_is_feasible);
+    EXPECT_EQ(result.assigned_count, fixture.expected_assigned_count);
+    EXPECT_EQ(static_cast<int>(result.uncovered_days.size()), fixture.expected_uncovered_days_count);
+    validated_count += 1;
   }
-  )json";
 
-  const auto result = scheduler::Solve(input);
-
-  EXPECT_FALSE(result.is_feasible);
-  EXPECT_EQ(result.assigned_count, 1);
-  EXPECT_EQ(result.uncovered_days.size(), 1);
+  EXPECT_GT(validated_count, 0);
 }
 
 TEST(SolverFlow, RejectsInvalidJsonPayload) {

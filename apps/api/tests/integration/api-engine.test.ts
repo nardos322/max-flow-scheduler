@@ -9,6 +9,23 @@ import { solveScheduleWithEngine } from '../../src/services/solve-schedule.servi
 const defaultEngineBinary = fileURLToPath(
   new URL('../../../../services/engine-cpp/build/scheduler_engine', import.meta.url),
 );
+const fixturesDir = fileURLToPath(new URL('../../../../packages/domain/fixtures', import.meta.url));
+
+type FixtureCatalogEntry = {
+  category: 'happy' | 'edge' | 'invalid' | 'stress';
+  id: string;
+  requestFile: string;
+  expectSchemaValid: boolean;
+  expectedSolver?: {
+    isFeasible: boolean;
+    assignedCount: number;
+    uncoveredDaysCount: number;
+  };
+};
+
+const fixtureCatalog = JSON.parse(
+  readFileSync(fileURLToPath(new URL('../../../../packages/domain/fixtures/catalog.json', import.meta.url)), 'utf8'),
+) as FixtureCatalogEntry[];
 
 function hasExecutable(path: string): boolean {
   try {
@@ -24,9 +41,7 @@ function asValidRequest(body: SolveRequest) {
 }
 
 function loadRequestFixture(fileName: string): SolveRequest {
-  const fixturePath = fileURLToPath(
-    new URL(`../../../../packages/domain/fixtures/${fileName}`, import.meta.url),
-  );
+  const fixturePath = `${fixturesDir}/${fileName}`;
   return JSON.parse(readFileSync(fixturePath, 'utf8')) as SolveRequest;
 }
 
@@ -34,76 +49,55 @@ describe('API-engine integration', () => {
   const engineBinary = process.env.SCHEDULER_ENGINE_BINARY ?? defaultEngineBinary;
   const canRunIntegration = hasExecutable(engineBinary);
   const describeIf = canRunIntegration ? describe : describe.skip;
+  const validFixtures = fixtureCatalog.filter((fixture) => fixture.expectSchemaValid && fixture.expectedSolver);
+  const invalidFixtures = fixtureCatalog.filter((fixture) => !fixture.expectSchemaValid);
 
   describeIf('validate -> controller -> engine', () => {
-    it('returns solver response for a feasible payload', async () => {
+    it('returns expected outcomes for every valid shared fixture', async () => {
       process.env.SCHEDULER_ENGINE_BINARY = engineBinary;
 
-      const status = vi.fn().mockReturnThis();
-      const json = vi.fn();
-      const next = vi.fn();
-      const res = { status, json, locals: { requestId: 'integration-req-1' } };
+      for (const fixture of validFixtures) {
+        const expected = fixture.expectedSolver;
+        if (!expected) {
+          throw new Error(`Missing expectedSolver for fixture '${fixture.id}'`);
+        }
 
-      const body = loadRequestFixture('happy.basic.request.json');
+        const status = vi.fn().mockReturnThis();
+        const json = vi.fn();
+        const next = vi.fn();
+        const res = { status, json, locals: { requestId: `integration-${fixture.id}` } };
 
-      await validateSolveRequestMiddleware(asValidRequest(body), res as never, next);
-      expect(next).toHaveBeenCalledWith();
+        await validateSolveRequestMiddleware(asValidRequest(loadRequestFixture(fixture.requestFile)), res as never, next);
+        expect(next, fixture.id).toHaveBeenCalledWith();
 
-      const solveScheduleController = createSolveScheduleController(solveScheduleWithEngine);
-      await solveScheduleController({} as never, res as never, next);
+        const solveScheduleController = createSolveScheduleController(solveScheduleWithEngine);
+        await solveScheduleController({} as never, res as never, next);
 
-      expect(status).toHaveBeenCalledWith(200);
-      expect(json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          contractVersion: '1.0',
-          isFeasible: true,
-          assignedCount: 2,
-          uncoveredDays: [],
-        }),
-      );
+        expect(status, fixture.id).toHaveBeenCalledWith(200);
+        expect(json, fixture.id).toHaveBeenCalledWith(
+          expect.objectContaining({
+            contractVersion: '1.0',
+            isFeasible: expected.isFeasible,
+            assignedCount: expected.assignedCount,
+          }),
+        );
+
+        const call = json.mock.calls[0]?.[0] as { uncoveredDays: string[] };
+        expect(call.uncoveredDays.length, fixture.id).toBe(expected.uncoveredDaysCount);
+      }
     });
 
-    it('handles edge fixture with one doctor across multiple periods', async () => {
-      process.env.SCHEDULER_ENGINE_BINARY = engineBinary;
+    it('rejects invalid fixture payloads before solver execution', async () => {
+      for (const fixture of invalidFixtures) {
+        const next = vi.fn();
+        const res = { locals: { requestId: `integration-${fixture.id}` } };
 
-      const status = vi.fn().mockReturnThis();
-      const json = vi.fn();
-      const next = vi.fn();
-      const res = { status, json, locals: { requestId: 'integration-req-2' } };
+        await validateSolveRequestMiddleware(asValidRequest(loadRequestFixture(fixture.requestFile)), res as never, next);
 
-      await validateSolveRequestMiddleware(
-        asValidRequest(loadRequestFixture('edge.one-doctor-multi-period.request.json')),
-        res as never,
-        next,
-      );
-      expect(next).toHaveBeenCalledWith();
-
-      const solveScheduleController = createSolveScheduleController(solveScheduleWithEngine);
-      await solveScheduleController({} as never, res as never, next);
-
-      expect(status).toHaveBeenCalledWith(200);
-      expect(json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          contractVersion: '1.0',
-          isFeasible: true,
-          assignedCount: 2,
-        }),
-      );
-    });
-
-    it('rejects invalid fixture payload before solver execution', async () => {
-      const next = vi.fn();
-      const res = { locals: { requestId: 'integration-req-3' } };
-
-      await validateSolveRequestMiddleware(
-        asValidRequest(loadRequestFixture('invalid.duplicate-doctor.request.json')),
-        res as never,
-        next,
-      );
-
-      const [error] = next.mock.calls[0] as [Error];
-      expect(error).toBeDefined();
-      expect((error as { statusCode?: number }).statusCode).toBe(400);
+        const [error] = next.mock.calls[0] as [Error];
+        expect(error, fixture.id).toBeDefined();
+        expect((error as { statusCode?: number }).statusCode, fixture.id).toBe(400);
+      }
     });
   });
 });

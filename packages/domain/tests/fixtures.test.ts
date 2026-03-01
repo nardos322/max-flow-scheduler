@@ -5,9 +5,15 @@ import { describe, expect, it } from 'vitest';
 import { solveRequestSchema } from '../src/index.js';
 
 type FixtureCatalogEntry = {
+  category: 'happy' | 'edge' | 'invalid' | 'stress';
   id: string;
   requestFile: string;
   expectSchemaValid: boolean;
+  expectedSolver?: {
+    isFeasible: boolean;
+    assignedCount: number;
+    uncoveredDaysCount: number;
+  };
 };
 
 const fixturesDir = fileURLToPath(new URL('../fixtures', import.meta.url));
@@ -21,6 +27,12 @@ describe('domain fixture catalog', () => {
       const payload = JSON.parse(raw) as unknown;
       const parsed = solveRequestSchema.safeParse(payload);
       expect(parsed.success, fixture.id).toBe(fixture.expectSchemaValid);
+
+      if (fixture.expectSchemaValid) {
+        expect(fixture.expectedSolver, `${fixture.id} must define expectedSolver`).toBeDefined();
+      } else {
+        expect(fixture.expectedSolver, `${fixture.id} must not define expectedSolver`).toBeUndefined();
+      }
     }
   });
 });

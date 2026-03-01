@@ -46,6 +46,7 @@ if(BUILD_TESTING)
   if(GTest_FOUND OR TARGET GTest::gtest_main)
     add_executable(solver_tests tests/solver_test.cpp)
     target_link_libraries(solver_tests PRIVATE GTest::gtest_main solver_lib)
+    target_include_directories(solver_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/third_party)
     target_compile_definitions(solver_tests PRIVATE
       DOMAIN_FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../../packages/domain/fixtures"
     )
