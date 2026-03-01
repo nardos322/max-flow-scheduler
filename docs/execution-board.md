@@ -14,11 +14,7 @@ _Ultima actualizacion manual: 2026-03-01 (alineado con evidencia en codigo/repos
 - Tareas frontend que quedan en espera por esta decision: `T-502.1`, `T-502.2`, `T-502.3`, `T-552.1`, `T-552.2`, `T-553.3`.
 
 ### Cola activa backend-only
-1. `T-602.1` Ejecutar benchmark matrix final.
-2. `T-602.2` Definir budgets y alarmas de regresion.
-3. `T-603.1` Dockerizar API/engine.
-4. `T-603.2` Pipeline de release + rollback.
-5. `T-603.3` Runbook/ADR/changelog tecnico.
+1. Sin tareas backend pendientes en la cola activa.
 
 ## EPIC E1 - Foundation Monorepo (Semanas 1-2)
 ### US-101 Definir arquitectura y alcance (P0, 5)
@@ -155,15 +151,15 @@ _Ultima actualizacion manual: 2026-03-01 (alineado con evidencia en codigo/repos
   - Checklist seguridad aprobado
 
 ### US-602 Performance budgets (P1, 5)
-- T-602.1 Ejecutar benchmark matrix final. Owner: `performance-benchmarks`. Estado: `todo`
-- T-602.2 Definir budgets y alarmas de regresion. Owner: `performance-benchmarks`. Estado: `todo`
+- T-602.1 Ejecutar benchmark matrix final. Owner: `performance-benchmarks`. Estado: `done`
+- T-602.2 Definir budgets y alarmas de regresion. Owner: `performance-benchmarks`. Estado: `done`
 - Done cuando:
   - Baseline + thresholds documentados
 
 ### US-603 Release candidate (P0, 8)
-- T-603.1 Dockerizar web/api/engine. Owner: `devops-release`. Estado: `todo`
-- T-603.2 Pipeline de release + rollback. Owner: `devops-release`. Estado: `todo`
-- T-603.3 Runbook/ADR/changelog tecnico. Owner: `technical-writer`. Estado: `todo`
+- T-603.1 Dockerizar web/api/engine. Owner: `devops-release`. Estado: `done`
+- T-603.2 Pipeline de release + rollback. Owner: `devops-release`. Estado: `done`
+- T-603.3 Runbook/ADR/changelog tecnico. Owner: `technical-writer`. Estado: `done`
 - Done cuando:
   - RC desplegable y rollback probado
 

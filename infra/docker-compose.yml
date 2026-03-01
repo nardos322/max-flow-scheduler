@@ -1,14 +1,23 @@
 version: '3.9'
 services:
   api:
-    image: node:22-alpine
-    working_dir: /workspace
-    command: sh -c "echo 'Define API container in etapa 2/3'"
-  web:
-    image: node:22-alpine
-    working_dir: /workspace
-    command: sh -c "echo 'Define Web container in etapa 4/5'"
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    environment:
+      DATABASE_URL: file:./.data/dev.db
+      JWT_SECRET: change-me-in-real-env
+      PORT: 3000
+    ports:
+      - '3000:3000'
+    volumes:
+      - api-data:/workspace/apps/api/.data
+
   engine:
-    image: gcc:14
-    working_dir: /workspace
-    command: sh -c "echo 'Define engine container in etapa 3'"
+    build:
+      context: ..
+      dockerfile: services/engine-cpp/Dockerfile
+    entrypoint: ["/bin/sh", "-lc", "sleep infinity"]
+
+volumes:
+  api-data:

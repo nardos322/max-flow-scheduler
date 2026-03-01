@@ -30,6 +30,24 @@ git push origin v0.2.0
 - cambios de contrato/API;
 - notas de migracion (si aplica).
 
+## Pipeline automatizado
+- Workflow: `.github/workflows/release.yml`
+- Trigger: push de tags `v*.*.*`
+- Artefactos publicados en GHCR:
+  - `ghcr.io/<owner>/<repo>-api:<version>`
+  - `ghcr.io/<owner>/<repo>-engine:<version>`
+  - actualizacion de alias `latest` para ambos.
+
+## Rollback
+- Workflow: `.github/workflows/rollback.yml`
+- Trigger: `workflow_dispatch` con input `version` (ej: `v0.2.1`)
+- Accion:
+  - retaggea `ghcr` de API y engine desde `<version>` a `latest`.
+- Uso:
+  1. Ir a Actions -> `Rollback`.
+  2. Ejecutar workflow con la version objetivo.
+  3. Re-desplegar apuntando a `latest` o al tag fijo rollbackeado.
+
 ## Criterios de salida
 - Todas las historias del milestone cerradas.
 - CI en verde.

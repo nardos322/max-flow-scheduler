@@ -1,0 +1,13 @@
+{
+  "benchmark": "engine-smoke",
+  "warnTolerancePercent": 20,
+  "scenarios": [
+    { "scenario": "fixture-happy.basic", "maxP95Ms": 8 },
+    { "scenario": "fixture-edge.one-doctor-multi-period", "maxP95Ms": 8 },
+    { "scenario": "fixture-edge.capacity-shortage", "maxP95Ms": 8 },
+    { "scenario": "fixture-baseline.feasible", "maxP95Ms": 8 },
+    { "scenario": "fixture-baseline.infeasible", "maxP95Ms": 8 },
+    { "scenario": "medium-dense-feasible", "maxP95Ms": 12 },
+    { "scenario": "large-dense-feasible", "maxP95Ms": 20 }
+  ]
+}

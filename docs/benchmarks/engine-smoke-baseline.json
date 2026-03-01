@@ -1,11 +1,11 @@
 {
   "benchmark": "engine-smoke",
-  "generatedAt": "2026-02-28T14:23:19.333Z",
+  "generatedAt": "2026-03-01T13:50:08.036Z",
   "engineBinary": "/home/nardos322/max-flow-scheduler/services/engine-cpp/build/scheduler_engine",
   "runsPerScenario": 10,
   "results": [
     {
-      "scenario": "small-feasible-fixture",
+      "scenario": "fixture-happy.basic",
       "inputSize": {
         "doctors": 2,
         "periods": 1,
@@ -15,15 +15,69 @@
       },
       "metrics": {
         "runs": 10,
-        "minMs": 2.631,
-        "maxMs": 18.855,
-        "avgMs": 6.73,
-        "p50Ms": 3.298,
-        "p95Ms": 18.855
+        "minMs": 2.641,
+        "maxMs": 4.266,
+        "avgMs": 3.284,
+        "p50Ms": 3.179,
+        "p95Ms": 4.266
       }
     },
     {
-      "scenario": "small-infeasible-fixture",
+      "scenario": "fixture-edge.one-doctor-multi-period",
+      "inputSize": {
+        "doctors": 1,
+        "periods": 2,
+        "days": 2,
+        "demands": 2,
+        "availability": 2
+      },
+      "metrics": {
+        "runs": 10,
+        "minMs": 2.369,
+        "maxMs": 3.554,
+        "avgMs": 3.021,
+        "p50Ms": 3.017,
+        "p95Ms": 3.554
+      }
+    },
+    {
+      "scenario": "fixture-edge.capacity-shortage",
+      "inputSize": {
+        "doctors": 1,
+        "periods": 2,
+        "days": 2,
+        "demands": 2,
+        "availability": 2
+      },
+      "metrics": {
+        "runs": 10,
+        "minMs": 2.389,
+        "maxMs": 2.95,
+        "avgMs": 2.649,
+        "p50Ms": 2.618,
+        "p95Ms": 2.95
+      }
+    },
+    {
+      "scenario": "fixture-baseline.feasible",
+      "inputSize": {
+        "doctors": 2,
+        "periods": 1,
+        "days": 2,
+        "demands": 2,
+        "availability": 2
+      },
+      "metrics": {
+        "runs": 10,
+        "minMs": 2.444,
+        "maxMs": 2.987,
+        "avgMs": 2.682,
+        "p50Ms": 2.647,
+        "p95Ms": 2.987
+      }
+    },
+    {
+      "scenario": "fixture-baseline.infeasible",
       "inputSize": {
         "doctors": 1,
         "periods": 1,
@@ -33,11 +87,11 @@
       },
       "metrics": {
         "runs": 10,
-        "minMs": 2.421,
-        "maxMs": 34.04,
-        "avgMs": 6.817,
-        "p50Ms": 2.677,
-        "p95Ms": 34.04
+        "minMs": 2.389,
+        "maxMs": 2.852,
+        "avgMs": 2.634,
+        "p50Ms": 2.616,
+        "p95Ms": 2.852
       }
     },
     {
@@ -51,11 +105,11 @@
       },
       "metrics": {
         "runs": 10,
-        "minMs": 4.945,
-        "maxMs": 31.542,
-        "avgMs": 10.4,
-        "p50Ms": 5.191,
-        "p95Ms": 31.542
+        "minMs": 5.031,
+        "maxMs": 5.326,
+        "avgMs": 5.164,
+        "p50Ms": 5.165,
+        "p95Ms": 5.326
       }
     },
     {
@@ -69,11 +123,11 @@
       },
       "metrics": {
         "runs": 10,
-        "minMs": 8.873,
-        "maxMs": 10.502,
-        "avgMs": 9.572,
-        "p50Ms": 9.347,
-        "p95Ms": 10.502
+        "minMs": 9.287,
+        "maxMs": 11.47,
+        "avgMs": 10.126,
+        "p50Ms": 10.001,
+        "p95Ms": 11.47
       }
     }
   ]

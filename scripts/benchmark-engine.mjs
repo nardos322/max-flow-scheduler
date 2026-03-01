@@ -101,6 +101,17 @@ function loadFixtureScenario(key, filePath) {
   return { name: key, payload };
 }
 
+function loadCatalogFixtureScenarios() {
+  const fixturesRoot = resolve('packages/domain/fixtures');
+  const catalog = JSON.parse(readFileSync(resolve(fixturesRoot, 'catalog.json'), 'utf8'));
+
+  return catalog
+    .filter((entry) => entry.expectSchemaValid === true)
+    .map((entry) =>
+      loadFixtureScenario(`fixture-${entry.id}`, resolve(fixturesRoot, entry.requestFile)),
+    );
+}
+
 function countDays(payload) {
   return payload.periods.reduce((acc, period) => acc + period.dayIds.length, 0);
 }
@@ -158,8 +169,7 @@ function main() {
   const args = parseArgs(process.argv.slice(2));
 
   const scenarios = [
-    loadFixtureScenario('small-feasible-fixture', 'packages/domain/fixtures/feasible.request.json'),
-    loadFixtureScenario('small-infeasible-fixture', 'packages/domain/fixtures/infeasible.request.json'),
+    ...loadCatalogFixtureScenarios(),
     buildScenario({
       key: 'medium-dense-feasible',
       doctors: 12,

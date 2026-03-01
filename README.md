@@ -50,6 +50,14 @@ Monorepo para planificacion de medicos en vacaciones usando un solver de max-flo
   - `400` para JSON mal formado
   - `5xx` sin detalles internos del solver
 
+## Docker (API + Engine)
+- API Dockerfile: `apps/api/Dockerfile`
+- Engine Dockerfile: `services/engine-cpp/Dockerfile`
+- Compose local: `infra/docker-compose.yml`
+- Comandos:
+  - `docker compose -f infra/docker-compose.yml build`
+  - `docker compose -f infra/docker-compose.yml up -d api`
+
 ## Nota MVP
 - Integracion API -> engine via CLI (`stdin/stdout`).
 - Autenticacion JWT basica en endpoints de disponibilidad.

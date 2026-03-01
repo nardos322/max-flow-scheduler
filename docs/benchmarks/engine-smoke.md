@@ -1,42 +1,57 @@
 # Engine Smoke Benchmark Baseline
 
-Fecha de baseline: 2026-02-28
+Fecha de baseline: 2026-03-01
 
 ## Metodo
 - Comando: `pnpm bench:engine-cpp`
+- Chequeo de presupuesto: `pnpm bench:engine-cpp:check`
 - Binary under test: `services/engine-cpp/build/scheduler_engine`
 - Corridas por escenario: 10
 - Script: `scripts/benchmark-engine.mjs`
 - Salida cruda: `docs/benchmarks/engine-smoke-baseline.json`
+- Presupuestos: `docs/benchmarks/engine-smoke-budgets.json`
+- Matrix final: fixtures compartidos (`packages/domain/fixtures/catalog.json`) + escenarios densos sinteticos.
 
 ## Benchmark Matrix
 | Escenario | Doctors | Periods | Days | Availability | Objetivo |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `small-feasible-fixture` | 2 | 1 | 2 | 2 | Sanity factible minimo |
-| `small-infeasible-fixture` | 1 | 1 | 2 | 2 | Sanity infactible minimo |
+| `fixture-happy.basic` | 2 | 1 | 2 | 2 | Fixture happy compartido |
+| `fixture-edge.one-doctor-multi-period` | 1 | 2 | 2 | 2 | Edge factible compartido |
+| `fixture-edge.capacity-shortage` | 1 | 2 | 2 | 2 | Edge infactible por capacidad |
+| `fixture-baseline.feasible` | 2 | 1 | 2 | 2 | Baseline factible legado |
+| `fixture-baseline.infeasible` | 1 | 1 | 2 | 2 | Baseline infactible legado |
 | `medium-dense-feasible` | 12 | 3 | 15 | 180 | Carga media densa |
 | `large-dense-feasible` | 20 | 4 | 24 | 480 | Carga smoke alta |
 
 ## Baseline Metrics (ms)
 | Escenario | min | p50 | p95 | avg | max |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| `small-feasible-fixture` | 2.631 | 3.298 | 18.855 | 6.730 | 18.855 |
-| `small-infeasible-fixture` | 2.421 | 2.677 | 34.040 | 6.817 | 34.040 |
-| `medium-dense-feasible` | 4.945 | 5.191 | 31.542 | 10.400 | 31.542 |
-| `large-dense-feasible` | 8.873 | 9.347 | 10.502 | 9.572 | 10.502 |
+| `fixture-happy.basic` | 2.641 | 3.179 | 4.266 | 3.284 | 4.266 |
+| `fixture-edge.one-doctor-multi-period` | 2.369 | 3.017 | 3.554 | 3.021 | 3.554 |
+| `fixture-edge.capacity-shortage` | 2.389 | 2.618 | 2.950 | 2.649 | 2.950 |
+| `fixture-baseline.feasible` | 2.444 | 2.647 | 2.987 | 2.682 | 2.987 |
+| `fixture-baseline.infeasible` | 2.389 | 2.616 | 2.852 | 2.634 | 2.852 |
+| `medium-dense-feasible` | 5.031 | 5.165 | 5.326 | 5.164 | 5.326 |
+| `large-dense-feasible` | 9.287 | 10.001 | 11.470 | 10.126 | 11.470 |
 
 ## Hallazgos
-- La latencia tipica (p50) del smoke completo esta por debajo de 10 ms en todos los escenarios.
-- Los picos de p95 en escenarios pequenos/medios son mayores que en el grande, lo que sugiere ruido de proceso/entorno (arranque de proceso y scheduler del SO) por encima del costo del algoritmo en esta escala.
-- Con las cargas smoke actuales no se observa degradacion estructural por densidad (el escenario `large-dense-feasible` mantiene p95 cercano a p50).
+- Todos los fixtures compartidos quedan por debajo de `p95=5ms`, con alta estabilidad.
+- En escenarios densos, `medium` mantiene `p95=5.326ms` y `large` `p95=11.470ms`.
+- La diferencia `medium` vs `large` es consistente con aumento de `|V|` y `|E|`; no se observan outliers extremos en esta corrida.
 
-## Presupuesto Inicial Recomendado (Smoke)
-- `small-feasible-fixture`: p95 <= 25 ms
-- `small-infeasible-fixture`: p95 <= 40 ms
-- `medium-dense-feasible`: p95 <= 35 ms
-- `large-dense-feasible`: p95 <= 20 ms
+## Presupuestos y alarmas de regresion
+- Tolerancia `warn`: `+20%` por encima del presupuesto.
+- Clasificacion:
+  - `go`: `p95 <= maxP95Ms`
+  - `warn`: `maxP95Ms < p95 <= maxP95Ms * 1.20`
+  - `no-go`: `p95 > maxP95Ms * 1.20`
 
-## Gate Propuesto
-- `go` si todos los escenarios cumplen p95 dentro de presupuesto.
-- `warn` si algun escenario excede presupuesto hasta 20%.
-- `no-go` si algun escenario excede presupuesto por encima de 20%.
+| Escenario | maxP95Ms |
+| --- | ---: |
+| `fixture-happy.basic` | 8 |
+| `fixture-edge.one-doctor-multi-period` | 8 |
+| `fixture-edge.capacity-shortage` | 8 |
+| `fixture-baseline.feasible` | 8 |
+| `fixture-baseline.infeasible` | 8 |
+| `medium-dense-feasible` | 12 |
+| `large-dense-feasible` | 20 |

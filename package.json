@@ -12,6 +12,7 @@
     "format": "pnpm -r run format",
     "test:engine-cpp": "bash scripts/run-engine-tests.sh",
     "bench:engine-cpp": "node scripts/benchmark-engine.mjs",
+    "bench:engine-cpp:check": "node scripts/check-engine-benchmark.mjs",
     "ci": "pnpm lint && pnpm typecheck && pnpm test"
   },
   "devDependencies": {

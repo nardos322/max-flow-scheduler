@@ -1,0 +1,11 @@
+node_modules
+.pnpm-store
+**/node_modules
+**/dist
+**/build
+coverage
+.git
+.github
+*.log
+*.db
+*.db-journal
