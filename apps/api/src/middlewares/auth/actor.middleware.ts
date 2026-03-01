@@ -1,5 +1,6 @@
 import type { RequestHandler } from 'express';
 import jwt from 'jsonwebtoken';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 import type { UserRole } from '@scheduler/domain';
 import { HttpError } from '../../errors/http.error.js';
 
@@ -22,20 +23,20 @@ type JwtClaims = {
   role?: unknown;
 };
 
-function getJwtSecret(): string {
-  const secret = process.env.JWT_SECRET?.trim();
-  if (!secret) {
-    throw new HttpError(500, { error: 'JWT_SECRET is not configured' });
-  }
-  return secret;
-}
-
 function getJwtPublicKey(): string | null {
   const key = process.env.JWT_PUBLIC_KEY?.trim();
   if (!key) {
     return null;
   }
   return key;
+}
+
+function getJwtJwksUrl(): string | null {
+  const jwksUrl = process.env.JWT_JWKS_URL?.trim();
+  if (!jwksUrl) {
+    return null;
+  }
+  return jwksUrl;
 }
 
 function getJwtIssuer(): string {
@@ -54,7 +55,71 @@ function getJwtAudience(): string {
   return audience;
 }
 
-export const resolveActorMiddleware: RequestHandler = (req, res, next) => {
+const jwksByUrl = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
+
+function getRemoteJwks(url: URL): ReturnType<typeof createRemoteJWKSet> {
+  const key = url.toString();
+  const cached = jwksByUrl.get(key);
+  if (cached) {
+    return cached;
+  }
+
+  const created = createRemoteJWKSet(url);
+  jwksByUrl.set(key, created);
+  return created;
+}
+
+async function verifyJwtToken(token: string): Promise<JwtClaims> {
+  const issuer = getJwtIssuer();
+  const audience = getJwtAudience();
+  const jwksUrl = getJwtJwksUrl();
+
+  if (jwksUrl) {
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(jwksUrl);
+    } catch {
+      throw new HttpError(500, { error: 'JWT_JWKS_URL is not a valid URL' });
+    }
+
+    const { payload } = await jwtVerify(token, getRemoteJwks(parsedUrl), {
+      algorithms: ['RS256'],
+      issuer,
+      audience,
+    });
+    return payload as JwtClaims;
+  }
+
+  const publicKey = getJwtPublicKey();
+  if (publicKey) {
+    const payload = jwt.verify(token, publicKey, {
+      algorithms: ['RS256'],
+      audience,
+      issuer,
+    });
+    if (typeof payload === 'string' || !payload) {
+      throw new Error('INVALID_PAYLOAD');
+    }
+    return payload as JwtClaims;
+  }
+
+  const secret = process.env.JWT_SECRET?.trim();
+  if (secret) {
+    const payload = jwt.verify(token, secret, {
+      algorithms: ['HS256'],
+      audience,
+      issuer,
+    });
+    if (typeof payload === 'string' || !payload) {
+      throw new Error('INVALID_PAYLOAD');
+    }
+    return payload as JwtClaims;
+  }
+
+  throw new HttpError(500, { error: 'JWT auth is not configured: set JWT_JWKS_URL, JWT_PUBLIC_KEY, or JWT_SECRET' });
+}
+
+export const resolveActorMiddleware: RequestHandler = async (req, res, next) => {
   const authorization = req.headers.authorization;
   if (!authorization || !authorization.startsWith('Bearer ')) {
     next(new HttpError(401, { error: 'Missing bearer token' }));
@@ -64,28 +129,13 @@ export const resolveActorMiddleware: RequestHandler = (req, res, next) => {
   const token = authorization.slice('Bearer '.length).trim();
   let claims: JwtClaims;
   try {
-    const publicKey = getJwtPublicKey();
-    const payload = jwt.verify(
-      token,
-      publicKey ?? getJwtSecret(),
-      publicKey
-        ? {
-            algorithms: ['RS256'],
-            audience: getJwtAudience(),
-            issuer: getJwtIssuer(),
-          }
-        : {
-            algorithms: ['HS256'],
-            audience: getJwtAudience(),
-            issuer: getJwtIssuer(),
-          },
-    );
-    if (typeof payload === 'string' || !payload) {
-      next(new HttpError(401, { error: 'Invalid or expired JWT' }));
+    claims = await verifyJwtToken(token);
+  } catch (error) {
+    if (error instanceof HttpError && error.statusCode >= 500) {
+      next(error);
       return;
     }
-    claims = payload as JwtClaims;
-  } catch {
+
     next(new HttpError(401, { error: 'Invalid or expired JWT' }));
     return;
   }
