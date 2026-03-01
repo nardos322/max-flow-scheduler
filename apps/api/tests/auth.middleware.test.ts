@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { generateKeyPairSync } from 'node:crypto';
+import { exportJWK } from 'jose';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { requireRoleMiddleware, resolveActorMiddleware } from '../src/middlewares/auth/actor.middleware.js';
 
@@ -11,6 +12,7 @@ describe('resolveActorMiddleware', () => {
   beforeEach(() => {
     process.env.JWT_SECRET = 'test-secret';
     delete process.env.JWT_PUBLIC_KEY;
+    delete process.env.JWT_JWKS_URL;
     process.env.JWT_ISSUER = 'scheduler-api-tests';
     process.env.JWT_AUDIENCE = 'scheduler-api';
   });
@@ -120,6 +122,57 @@ describe('resolveActorMiddleware', () => {
 
     expect(next).toHaveBeenCalledWith();
     expect(res.locals).toEqual({ actor: { role: 'planner', userId: 'planner-1' } });
+  });
+
+  it('resolves actor from valid RS256 token when JWT_JWKS_URL is configured', async () => {
+    const { privateKey, publicKey } = generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+    });
+    const jwk = await exportJWK(publicKey);
+    jwk.use = 'sig';
+    jwk.alg = 'RS256';
+    jwk.kid = 'test-jwks-key';
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn(async () =>
+      new Response(JSON.stringify({ keys: [jwk] }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    ) as typeof fetch;
+
+    try {
+      process.env.JWT_JWKS_URL = 'https://idp.example.com/.well-known/jwks.json';
+      delete process.env.JWT_PUBLIC_KEY;
+      delete process.env.JWT_SECRET;
+
+      const token = jwt.sign(
+        {
+          sub: 'planner-2',
+          role: 'planner',
+          iss: 'scheduler-api-tests',
+          aud: 'scheduler-api',
+          exp: Math.floor(Date.now() / 1000) + 3600,
+        },
+        privateKey,
+        { algorithm: 'RS256', keyid: 'test-jwks-key' },
+      );
+
+      const next = vi.fn();
+      const res = { locals: {} };
+
+      await resolveActorMiddleware(
+        { headers: { authorization: `Bearer ${token}` } } as never,
+        res as never,
+        next,
+      );
+
+      expect(next).toHaveBeenCalledWith();
+      expect(res.locals).toEqual({ actor: { role: 'planner', userId: 'planner-2' } });
+      expect(globalThis.fetch).toHaveBeenCalled();
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 });
 

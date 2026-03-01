@@ -54,7 +54,7 @@ Monorepo para planificacion de medicos en vacaciones usando un solver de max-flo
   - `API_BODY_LIMIT` (default `100kb`)
 - Autenticacion/autorizacion JWT en endpoints de negocio:
   - Claims obligatorios: `sub`, `role`, `iss`, `aud`, `exp` (y respeta `nbf` si existe)
-  - Config requerida: `JWT_ISSUER`, `JWT_AUDIENCE` + uno de `JWT_SECRET` (HS256) o `JWT_PUBLIC_KEY` (RS256)
+  - Config requerida: `JWT_ISSUER`, `JWT_AUDIENCE` + uno de `JWT_JWKS_URL` (RS256/JWKS), `JWT_PUBLIC_KEY` (RS256) o `JWT_SECRET` (HS256)
 - Sanitizacion de errores:
   - `413` para payload demasiado grande
   - `400` para JSON mal formado
