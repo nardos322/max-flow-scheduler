@@ -85,6 +85,10 @@ Monorepo para planificacion de medicos en vacaciones usando un solver de max-flo
 ## Swagger / OpenAPI (API)
 - JSON OpenAPI: `GET /openapi.json`
 - UI Swagger: `GET /docs`
+- Artefacto versionado en repo: `apps/api/openapi.json`
+- Export local del artefacto:
+  - `pnpm --filter @scheduler/api run build` (incluye export)
+  - o `pnpm --filter @scheduler/api run openapi:export:dev`
 - Seguridad:
   - Endpoints de negocio documentados con `BearerAuth` (JWT).
   - `/health`, `/openapi.json` y `/docs` son publicos.
