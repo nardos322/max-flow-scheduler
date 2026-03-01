@@ -7,101 +7,347 @@ function renderApp() {
   return renderWithQueryClient(<App />);
 }
 
+function jsonResponse(payload: unknown): Response {
+  return {
+    ok: true,
+    json: async () => payload,
+  } as Response;
+}
+
 describe('App', () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it('renders sprint run console', () => {
+  it('renders planning cycle console and sprint actions', () => {
     renderApp();
 
-    expect(screen.getByRole('heading', { name: 'Sprint Run Console' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Planning Cycle Console' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Crear ciclo' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ejecutar ciclo' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Ejecutar corrida' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Marcar ready-to-solve' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Guardar disponibilidad medico' })).toBeInTheDocument();
   });
 
-  it('blocks run until sprint id is provided', () => {
-    renderApp();
-
-    expect(screen.getByRole('button', { name: 'Ejecutar corrida' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Cargar historial' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Cargar disponibilidad' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Marcar ready-to-solve' })).toBeDisabled();
-  });
-
-  it('marks sprint ready and runs sprint solve rendering assignment rows by day', async () => {
-    let sprintStatus: 'draft' | 'ready-to-solve' = 'draft';
-
+  it('creates a planning cycle and refreshes list', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
       const url = String(input);
 
-      if (url.endsWith('/sprints/sprint-1') && init?.method === 'GET') {
-        return {
-          ok: true,
-          json: async () => ({
-            id: 'sprint-1',
-            name: 'Sprint 1',
-            periodId: 'p1',
-            status: sprintStatus,
-            globalConfig: {
-              requiredDoctorsPerShift: 1,
-              maxDaysPerDoctorDefault: 2,
-            },
-            doctorIds: ['d1'],
-            availability: [
-              {
-                doctorId: 'd1',
-                periodId: 'p1',
-                dayId: '2026-03-02',
-                source: 'doctor-self-service',
-                updatedByUserId: 'd1',
-                updatedByRole: 'doctor',
-                updatedAt: '2026-03-01T09:30:00.000Z',
-              },
-            ],
-            createdAt: '2026-03-01T09:00:00.000Z',
-            updatedAt: '2026-03-01T09:30:00.000Z',
-          }),
-        } as Response;
+      if (url.endsWith('/planning-cycles') && init?.method === 'POST') {
+        return jsonResponse({
+          id: 'cycle-1',
+          name: 'Q2 guardias',
+          status: 'draft',
+          sprintIds: [],
+          createdAt: '2026-03-01T09:00:00.000Z',
+          updatedAt: '2026-03-01T09:00:00.000Z',
+        });
       }
 
-      if (url.endsWith('/sprints/sprint-1/status') && init?.method === 'PATCH') {
+      if (url.endsWith('/planning-cycles') && init?.method === 'GET') {
+        return jsonResponse({
+          items: [
+            {
+              id: 'cycle-1',
+              name: 'Q2 guardias',
+              status: 'draft',
+              sprintIds: [],
+              createdAt: '2026-03-01T09:00:00.000Z',
+              updatedAt: '2026-03-01T09:00:00.000Z',
+            },
+          ],
+        });
+      }
+
+      if (url.includes('/planning-cycles/cycle-1') && init?.method === 'GET') {
+        return jsonResponse({
+          id: 'cycle-1',
+          name: 'Q2 guardias',
+          status: 'draft',
+          sprintIds: [],
+          createdAt: '2026-03-01T09:00:00.000Z',
+          updatedAt: '2026-03-01T09:00:00.000Z',
+        });
+      }
+
+      if (url.includes('/planning-cycles/cycle-1/runs') && init?.method === 'GET') {
+        return jsonResponse({
+          items: [],
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${url}`);
+    });
+
+    renderApp();
+
+    fireEvent.change(screen.getByLabelText('Bearer token'), { target: { value: 'token-1' } });
+    fireEvent.change(screen.getByLabelText('Nombre de ciclo'), { target: { value: 'Q2 guardias' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Crear ciclo' }));
+
+    expect(await screen.findByText('Ciclo Q2 guardias creado.')).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/planning-cycles'),
+        expect.objectContaining({ method: 'POST' }),
+      );
+    });
+  });
+
+  it('adds sprint to selected cycle', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const rawUrl = String(input);
+      const url = new URL(rawUrl);
+
+      if (url.pathname === '/planning-cycles' && init?.method === 'GET') {
+        return jsonResponse({
+          items: [
+            {
+              id: 'cycle-1',
+              name: 'Q2 guardias',
+              status: 'draft',
+              sprintIds: [],
+              createdAt: '2026-03-01T09:00:00.000Z',
+              updatedAt: '2026-03-01T09:00:00.000Z',
+            },
+          ],
+        });
+      }
+
+      if (url.pathname === '/planning-cycles/cycle-1' && init?.method === 'GET') {
+        return jsonResponse({
+          id: 'cycle-1',
+          name: 'Q2 guardias',
+          status: 'draft',
+          sprintIds: ['sprint-1'],
+          createdAt: '2026-03-01T09:00:00.000Z',
+          updatedAt: '2026-03-01T09:10:00.000Z',
+        });
+      }
+
+      if (url.pathname === '/planning-cycles/cycle-1/runs' && init?.method === 'GET') {
+        return jsonResponse({
+          items: [],
+        });
+      }
+
+      if (url.pathname === '/planning-cycles/cycle-1/sprints' && init?.method === 'POST') {
+        return jsonResponse({
+          id: 'cycle-1',
+          name: 'Q2 guardias',
+          status: 'draft',
+          sprintIds: ['sprint-1'],
+          createdAt: '2026-03-01T09:00:00.000Z',
+          updatedAt: '2026-03-01T09:10:00.000Z',
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${rawUrl}`);
+    });
+
+    renderApp();
+
+    fireEvent.change(screen.getByLabelText('Bearer token'), { target: { value: 'token-1' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Cargar ciclos' }));
+
+    await screen.findByText('Q2 guardias');
+    fireEvent.click(screen.getByText('Q2 guardias'));
+
+    fireEvent.change(screen.getByLabelText('Sprint ID ciclo'), { target: { value: 'sprint-1' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar sprint al ciclo' }));
+
+    expect(await screen.findByText('Sprint agregado al ciclo.')).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/planning-cycles/cycle-1/sprints'),
+        expect.objectContaining({ method: 'POST' }),
+      );
+    });
+  });
+
+  it('loads more planning cycle runs with cursor pagination', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const rawUrl = String(input);
+      const url = new URL(rawUrl);
+
+      if (url.pathname === '/planning-cycles' && init?.method === 'GET') {
+        return jsonResponse({
+          items: [
+            {
+              id: 'cycle-1',
+              name: 'Q2 guardias',
+              status: 'draft',
+              sprintIds: ['sprint-1'],
+              createdAt: '2026-03-01T09:00:00.000Z',
+              updatedAt: '2026-03-01T09:00:00.000Z',
+            },
+          ],
+        });
+      }
+
+      if (url.pathname === '/planning-cycles/cycle-1' && init?.method === 'GET') {
+        return jsonResponse({
+          id: 'cycle-1',
+          name: 'Q2 guardias',
+          status: 'draft',
+          sprintIds: ['sprint-1'],
+          createdAt: '2026-03-01T09:00:00.000Z',
+          updatedAt: '2026-03-01T09:00:00.000Z',
+        });
+      }
+
+      if (url.pathname === '/planning-cycles/cycle-1/runs' && init?.method === 'GET') {
+        if (url.searchParams.get('cursor') === '2026-03-01T10:00:00.000Z') {
+          return jsonResponse({
+            items: [
+              {
+                id: 'cycle-run-2',
+                cycleId: 'cycle-1',
+                executedAt: '2026-03-01T11:00:00.000Z',
+                status: 'partial-failed',
+                items: [],
+              },
+            ],
+          });
+        }
+
+        return jsonResponse({
+          items: [
+            {
+              id: 'cycle-run-1',
+              cycleId: 'cycle-1',
+              executedAt: '2026-03-01T10:00:00.000Z',
+              status: 'succeeded',
+              items: [],
+            },
+          ],
+          nextCursor: '2026-03-01T10:00:00.000Z',
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${rawUrl}`);
+    });
+
+    renderApp();
+
+    fireEvent.change(screen.getByLabelText('Bearer token'), { target: { value: 'token-1' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Cargar ciclos' }));
+
+    await screen.findByText('Q2 guardias');
+    fireEvent.click(screen.getByText('Q2 guardias'));
+
+    await screen.findByText('cycle-run-1');
+    fireEvent.click(screen.getByRole('button', { name: 'Cargar mas corridas de ciclo' }));
+
+    expect(await screen.findByText('cycle-run-2')).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('cursor=2026-03-01T10%3A00%3A00.000Z'),
+        expect.objectContaining({ method: 'GET' }),
+      );
+    });
+  });
+
+  it('marks sprint ready and runs sprint solve rendering assignments', async () => {
+    let sprintStatus: 'draft' | 'ready-to-solve' = 'draft';
+
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const rawUrl = String(input);
+      const url = new URL(rawUrl);
+
+      if (url.pathname === '/sprints/sprint-1' && init?.method === 'GET') {
+        return jsonResponse({
+          id: 'sprint-1',
+          name: 'Sprint 1',
+          periodId: 'p1',
+          status: sprintStatus,
+          globalConfig: {
+            requiredDoctorsPerShift: 1,
+            maxDaysPerDoctorDefault: 2,
+          },
+          doctorIds: ['d1'],
+          availability: [
+            {
+              doctorId: 'd1',
+              periodId: 'p1',
+              dayId: '2026-03-02',
+              source: 'doctor-self-service',
+              updatedByUserId: 'd1',
+              updatedByRole: 'doctor',
+              updatedAt: '2026-03-01T09:30:00.000Z',
+            },
+          ],
+          createdAt: '2026-03-01T09:00:00.000Z',
+          updatedAt: '2026-03-01T09:30:00.000Z',
+        });
+      }
+
+      if (url.pathname === '/sprints/sprint-1/status' && init?.method === 'PATCH') {
         sprintStatus = 'ready-to-solve';
-        return {
-          ok: true,
-          json: async () => ({
-            id: 'sprint-1',
-            name: 'Sprint 1',
-            periodId: 'p1',
-            status: 'ready-to-solve',
-            globalConfig: {
-              requiredDoctorsPerShift: 1,
-              maxDaysPerDoctorDefault: 2,
+        return jsonResponse({
+          id: 'sprint-1',
+          name: 'Sprint 1',
+          periodId: 'p1',
+          status: 'ready-to-solve',
+          globalConfig: {
+            requiredDoctorsPerShift: 1,
+            maxDaysPerDoctorDefault: 2,
+          },
+          doctorIds: ['d1'],
+          availability: [
+            {
+              doctorId: 'd1',
+              periodId: 'p1',
+              dayId: '2026-03-02',
+              source: 'doctor-self-service',
+              updatedByUserId: 'd1',
+              updatedByRole: 'doctor',
+              updatedAt: '2026-03-01T09:30:00.000Z',
             },
-            doctorIds: ['d1'],
-            availability: [
-              {
-                doctorId: 'd1',
-                periodId: 'p1',
-                dayId: '2026-03-02',
-                source: 'doctor-self-service',
-                updatedByUserId: 'd1',
-                updatedByRole: 'doctor',
-                updatedAt: '2026-03-01T09:30:00.000Z',
-              },
-            ],
-            createdAt: '2026-03-01T09:00:00.000Z',
-            updatedAt: '2026-03-01T09:40:00.000Z',
-          }),
-        } as Response;
+          ],
+          createdAt: '2026-03-01T09:00:00.000Z',
+          updatedAt: '2026-03-01T09:40:00.000Z',
+        });
       }
 
-      if (url.endsWith('/sprints/sprint-1/runs') && init?.method === 'POST') {
-        return {
-          ok: true,
-          json: async () => ({
-            run: {
+      if (url.pathname === '/sprints/sprint-1/runs' && init?.method === 'POST') {
+        return jsonResponse({
+          run: {
+            id: 'run-1',
+            sprintId: 'sprint-1',
+            executedAt: '2026-03-01T10:00:00.000Z',
+            status: 'succeeded',
+            inputSnapshot: {
+              contractVersion: '1.0',
+              doctors: [{ id: 'd1', maxTotalDays: 2 }],
+              periods: [{ id: 'p1', dayIds: ['2026-03-02'] }],
+              demands: [{ dayId: '2026-03-02', requiredDoctors: 1 }],
+              availability: [{ doctorId: 'd1', periodId: 'p1', dayId: '2026-03-02' }],
+            },
+            outputSnapshot: {
+              contractVersion: '1.0',
+              isFeasible: true,
+              assignedCount: 1,
+              uncoveredDays: [],
+              assignments: [{ doctorId: 'd1', periodId: 'p1', dayId: '2026-03-02' }],
+            },
+          },
+          result: {
+            contractVersion: '1.0',
+            isFeasible: true,
+            assignedCount: 1,
+            uncoveredDays: [],
+            assignments: [{ doctorId: 'd1', periodId: 'p1', dayId: '2026-03-02' }],
+          },
+        });
+      }
+
+      if (url.pathname === '/sprints/sprint-1/runs' && init?.method === 'GET') {
+        return jsonResponse({
+          items: [
+            {
               id: 'run-1',
               sprintId: 'sprint-1',
               executedAt: '2026-03-01T10:00:00.000Z',
@@ -113,68 +359,32 @@ describe('App', () => {
                 demands: [{ dayId: '2026-03-02', requiredDoctors: 1 }],
                 availability: [{ doctorId: 'd1', periodId: 'p1', dayId: '2026-03-02' }],
               },
-              outputSnapshot: {
-                contractVersion: '1.0',
-                isFeasible: true,
-                assignedCount: 1,
-                uncoveredDays: [],
-                assignments: [{ doctorId: 'd1', periodId: 'p1', dayId: '2026-03-02' }],
-              },
             },
-            result: {
-              contractVersion: '1.0',
-              isFeasible: true,
-              assignedCount: 1,
-              uncoveredDays: [],
-              assignments: [{ doctorId: 'd1', periodId: 'p1', dayId: '2026-03-02' }],
+          ],
+        });
+      }
+
+      if (url.pathname === '/sprints/sprint-1/availability' && init?.method === 'GET') {
+        return jsonResponse({
+          items: [
+            {
+              doctorId: 'd1',
+              periodId: 'p1',
+              dayId: '2026-03-02',
+              source: 'doctor-self-service',
+              updatedByUserId: 'd1',
+              updatedByRole: 'doctor',
+              updatedAt: '2026-03-01T09:30:00.000Z',
             },
-          }),
-        } as Response;
+          ],
+        });
       }
 
-      if (url.endsWith('/sprints/sprint-1/runs') && init?.method === 'GET') {
-        return {
-          ok: true,
-          json: async () => ({
-            items: [
-              {
-                id: 'run-1',
-                sprintId: 'sprint-1',
-                executedAt: '2026-03-01T10:00:00.000Z',
-                status: 'succeeded',
-                inputSnapshot: {
-                  contractVersion: '1.0',
-                  doctors: [{ id: 'd1', maxTotalDays: 2 }],
-                  periods: [{ id: 'p1', dayIds: ['2026-03-02'] }],
-                  demands: [{ dayId: '2026-03-02', requiredDoctors: 1 }],
-                  availability: [{ doctorId: 'd1', periodId: 'p1', dayId: '2026-03-02' }],
-                },
-              },
-            ],
-          }),
-        } as Response;
+      if (url.pathname === '/planning-cycles' && init?.method === 'GET') {
+        return jsonResponse({ items: [] });
       }
 
-      if (url.endsWith('/sprints/sprint-1/availability') && init?.method === 'GET') {
-        return {
-          ok: true,
-          json: async () => ({
-            items: [
-              {
-                doctorId: 'd1',
-                periodId: 'p1',
-                dayId: '2026-03-02',
-                source: 'doctor-self-service',
-                updatedByUserId: 'd1',
-                updatedByRole: 'doctor',
-                updatedAt: '2026-03-01T09:30:00.000Z',
-              },
-            ],
-          }),
-        } as Response;
-      }
-
-      throw new Error(`Unexpected fetch call: ${url}`);
+      throw new Error(`Unexpected fetch call: ${rawUrl}`);
     });
 
     renderApp();
@@ -201,227 +411,8 @@ describe('App', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Ejecutar corrida' }));
 
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringContaining('/sprints/sprint-1/runs'),
-        expect.objectContaining({ method: 'POST' }),
-      );
-    });
-
     expect(await screen.findByText('Resultado de la ultima corrida (succeeded)')).toBeInTheDocument();
     expect(screen.getAllByText('2026-03-02').length).toBeGreaterThan(0);
     expect(screen.getAllByText('d1').length).toBeGreaterThan(0);
-  });
-
-  it('saves doctor self-service availability and refreshes table', async () => {
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
-      const url = String(input);
-
-      if (url.endsWith('/sprints/sprint-1/doctors/doc-1/availability') && init?.method === 'PUT') {
-        return {
-          ok: true,
-          json: async () => ({
-            id: 'sprint-1',
-            name: 'Sprint 1',
-            periodId: 'p1',
-            status: 'draft',
-            globalConfig: {
-              requiredDoctorsPerShift: 1,
-              maxDaysPerDoctorDefault: 2,
-            },
-            doctorIds: ['doc-1'],
-            availability: [
-              {
-                doctorId: 'doc-1',
-                periodId: 'p1',
-                dayId: '2026-03-02',
-                source: 'doctor-self-service',
-                updatedByUserId: 'doc-1',
-                updatedByRole: 'doctor',
-                updatedAt: '2026-03-01T11:00:00.000Z',
-              },
-            ],
-            createdAt: '2026-03-01T09:00:00.000Z',
-            updatedAt: '2026-03-01T11:00:00.000Z',
-          }),
-        } as Response;
-      }
-
-      if (url.endsWith('/sprints/sprint-1/availability') && init?.method === 'GET') {
-        return {
-          ok: true,
-          json: async () => ({
-            items: [
-              {
-                doctorId: 'doc-1',
-                periodId: 'p1',
-                dayId: '2026-03-02',
-                source: 'doctor-self-service',
-                updatedByUserId: 'doc-1',
-                updatedByRole: 'doctor',
-                updatedAt: '2026-03-01T11:00:00.000Z',
-              },
-            ],
-          }),
-        } as Response;
-      }
-
-      if (url.endsWith('/sprints/sprint-1') && init?.method === 'GET') {
-        return {
-          ok: true,
-          json: async () => ({
-            id: 'sprint-1',
-            name: 'Sprint 1',
-            periodId: 'p1',
-            status: 'draft',
-            globalConfig: {
-              requiredDoctorsPerShift: 1,
-              maxDaysPerDoctorDefault: 2,
-            },
-            doctorIds: ['doc-1'],
-            availability: [
-              {
-                doctorId: 'doc-1',
-                periodId: 'p1',
-                dayId: '2026-03-02',
-                source: 'doctor-self-service',
-                updatedByUserId: 'doc-1',
-                updatedByRole: 'doctor',
-                updatedAt: '2026-03-01T11:00:00.000Z',
-              },
-            ],
-            createdAt: '2026-03-01T09:00:00.000Z',
-            updatedAt: '2026-03-01T11:00:00.000Z',
-          }),
-        } as Response;
-      }
-
-      throw new Error(`Unexpected fetch call: ${url}`);
-    });
-
-    renderApp();
-
-    fireEvent.change(screen.getByLabelText('Sprint ID'), { target: { value: 'sprint-1' } });
-    fireEvent.change(screen.getByLabelText('Doctor ID autogestion'), { target: { value: 'doc-1' } });
-    fireEvent.change(screen.getByLabelText('Period ID autogestion'), { target: { value: 'p1' } });
-    fireEvent.change(screen.getByLabelText('Dias autogestion'), { target: { value: '2026-03-02' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar disponibilidad medico' }));
-
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringContaining('/sprints/sprint-1/doctors/doc-1/availability'),
-        expect.objectContaining({ method: 'PUT' }),
-      );
-    });
-
-    expect(screen.getByText('doctor-self-service')).toBeInTheDocument();
-    expect(screen.getByText('doc-1')).toBeInTheDocument();
-    expect(screen.getAllByText('2026-03-02').length).toBeGreaterThan(0);
-  });
-
-  it('saves planner override availability and refreshes table', async () => {
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
-      const url = String(input);
-
-      if (url.endsWith('/sprints/sprint-1/availability/override') && init?.method === 'PUT') {
-        return {
-          ok: true,
-          json: async () => ({
-            id: 'sprint-1',
-            name: 'Sprint 1',
-            periodId: 'p1',
-            status: 'draft',
-            globalConfig: {
-              requiredDoctorsPerShift: 1,
-              maxDaysPerDoctorDefault: 2,
-            },
-            doctorIds: ['doc-2'],
-            availability: [
-              {
-                doctorId: 'doc-2',
-                periodId: 'p1',
-                dayId: '2026-03-04',
-                source: 'planner-override',
-                updatedByUserId: 'planner-1',
-                updatedByRole: 'planner',
-                updatedAt: '2026-03-01T12:00:00.000Z',
-              },
-            ],
-            createdAt: '2026-03-01T09:00:00.000Z',
-            updatedAt: '2026-03-01T12:00:00.000Z',
-          }),
-        } as Response;
-      }
-
-      if (url.endsWith('/sprints/sprint-1/availability') && init?.method === 'GET') {
-        return {
-          ok: true,
-          json: async () => ({
-            items: [
-              {
-                doctorId: 'doc-2',
-                periodId: 'p1',
-                dayId: '2026-03-04',
-                source: 'planner-override',
-                updatedByUserId: 'planner-1',
-                updatedByRole: 'planner',
-                updatedAt: '2026-03-01T12:00:00.000Z',
-              },
-            ],
-          }),
-        } as Response;
-      }
-
-      if (url.endsWith('/sprints/sprint-1') && init?.method === 'GET') {
-        return {
-          ok: true,
-          json: async () => ({
-            id: 'sprint-1',
-            name: 'Sprint 1',
-            periodId: 'p1',
-            status: 'draft',
-            globalConfig: {
-              requiredDoctorsPerShift: 1,
-              maxDaysPerDoctorDefault: 2,
-            },
-            doctorIds: ['doc-2'],
-            availability: [
-              {
-                doctorId: 'doc-2',
-                periodId: 'p1',
-                dayId: '2026-03-04',
-                source: 'planner-override',
-                updatedByUserId: 'planner-1',
-                updatedByRole: 'planner',
-                updatedAt: '2026-03-01T12:00:00.000Z',
-              },
-            ],
-            createdAt: '2026-03-01T09:00:00.000Z',
-            updatedAt: '2026-03-01T12:00:00.000Z',
-          }),
-        } as Response;
-      }
-
-      throw new Error(`Unexpected fetch call: ${url}`);
-    });
-
-    renderApp();
-
-    fireEvent.change(screen.getByLabelText('Sprint ID'), { target: { value: 'sprint-1' } });
-    fireEvent.change(screen.getByLabelText('Doctor ID override'), { target: { value: 'doc-2' } });
-    fireEvent.change(screen.getByLabelText('Period ID override'), { target: { value: 'p1' } });
-    fireEvent.change(screen.getByLabelText('Dias override'), { target: { value: '2026-03-04' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar override planificador' }));
-
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringContaining('/sprints/sprint-1/availability/override'),
-        expect.objectContaining({ method: 'PUT' }),
-      );
-    });
-
-    expect(screen.getByText('planner-override')).toBeInTheDocument();
-    expect(screen.getByText('doc-2')).toBeInTheDocument();
-    expect(screen.getAllByText('2026-03-04').length).toBeGreaterThan(0);
   });
 });
