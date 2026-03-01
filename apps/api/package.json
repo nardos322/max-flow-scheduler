@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && pnpm run openapi:export",
+    "openapi:export": "node dist/scripts/export-openapi.js",
+    "openapi:export:dev": "tsx scripts/export-openapi.ts",
     "lint": "eslint src tests --max-warnings=0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "rm -f test-prisma.db test-prisma.db-journal && DATABASE_URL=file:./test-prisma.db prisma migrate deploy --schema prisma/schema.prisma && DATABASE_URL=file:./test-prisma.db vitest run --maxWorkers=1",

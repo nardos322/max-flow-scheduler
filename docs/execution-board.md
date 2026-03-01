@@ -100,6 +100,7 @@ _Ultima actualizacion manual: 2026-03-01 (alineado con evidencia en codigo/repos
 - T-402.2 Logging estructurado + requestId. Owner: `devops-release`. Estado: `done`
 - T-402.3 Tests integracion API-engine. Owner: `qa-reliability`. Estado: `done`
 - T-402.4 Publicar contrato OpenAPI y UI Swagger para consumo manual (`/openapi.json`, `/docs`). Owner: `api-contracts`. Estado: `done`
+- T-402.5 Exportar artefacto versionado `apps/api/openapi.json` en build para consumo offline (frontend/QA). Owner: `api-contracts`. Estado: `done`
 - Done cuando:
   - Errores consistentes y trazables
 
