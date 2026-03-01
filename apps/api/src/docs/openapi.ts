@@ -56,6 +56,7 @@ export const openApiDocument = {
     { name: 'periods' },
     { name: 'schedule' },
     { name: 'sprints' },
+    { name: 'planning-cycles' },
     { name: 'availability' },
     { name: 'runs' },
   ],
@@ -338,6 +339,7 @@ export const openApiDocument = {
         required: ['items'],
         properties: {
           items: { type: 'array', items: ref('Sprint') },
+          nextCursor: { type: 'string', format: 'date-time' },
         },
       },
       CreateSprintRequest: {
@@ -423,7 +425,78 @@ export const openApiDocument = {
         required: ['items'],
         properties: {
           items: { type: 'array', items: ref('SprintRun') },
+          nextCursor: { type: 'string', format: 'date-time' },
         },
+      },
+      PlanningCycle: {
+        type: 'object',
+        required: ['id', 'name', 'status', 'sprintIds', 'createdAt', 'updatedAt'],
+        properties: {
+          id: { type: 'string' },
+          name: { type: 'string' },
+          status: { type: 'string', enum: ['draft'] },
+          sprintIds: { type: 'array', items: { type: 'string' } },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
+        },
+      },
+      PlanningCycleListResponse: {
+        type: 'object',
+        required: ['items'],
+        properties: {
+          items: { type: 'array', items: ref('PlanningCycle') },
+          nextCursor: { type: 'string', format: 'date-time' },
+        },
+      },
+      CreatePlanningCycleRequest: {
+        type: 'object',
+        required: ['name'],
+        properties: {
+          name: { type: 'string', minLength: 1 },
+        },
+      },
+      AddPlanningCycleSprintRequest: {
+        type: 'object',
+        required: ['sprintId'],
+        properties: {
+          sprintId: { type: 'string', minLength: 1 },
+          orderIndex: { type: 'integer', minimum: 1 },
+        },
+      },
+      PlanningCycleRunItem: {
+        type: 'object',
+        required: ['sprintId', 'executedAt', 'status'],
+        properties: {
+          sprintId: { type: 'string' },
+          executedAt: { type: 'string', format: 'date-time' },
+          status: { type: 'string', enum: ['succeeded', 'failed'] },
+          inputSnapshot: ref('SolveRequest'),
+          outputSnapshot: ref('SolveResponse'),
+          error: ref('SprintRunError'),
+        },
+      },
+      PlanningCycleRun: {
+        type: 'object',
+        required: ['id', 'cycleId', 'executedAt', 'status', 'items'],
+        properties: {
+          id: { type: 'string' },
+          cycleId: { type: 'string' },
+          executedAt: { type: 'string', format: 'date-time' },
+          status: { type: 'string', enum: ['succeeded', 'partial-failed', 'failed'] },
+          items: { type: 'array', items: ref('PlanningCycleRunItem') },
+        },
+      },
+      PlanningCycleRunListResponse: {
+        type: 'object',
+        required: ['items'],
+        properties: {
+          items: { type: 'array', items: ref('PlanningCycleRun') },
+          nextCursor: { type: 'string', format: 'date-time' },
+        },
+      },
+      RunPlanningCycleRequest: {
+        type: 'object',
+        additionalProperties: false,
       },
       RunSprintSolveResponse: {
         type: 'object',
@@ -664,6 +737,10 @@ export const openApiDocument = {
         tags: ['sprints'],
         summary: 'Listar sprints',
         security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'cursor', in: 'query', required: false, schema: { type: 'string', format: 'date-time' } },
+          { name: 'limit', in: 'query', required: false, schema: { type: 'integer', minimum: 1, maximum: 100 } },
+        ],
         responses: {
           '200': { description: 'Lista de sprints', content: jsonContent('SprintListResponse') },
           '401': { $ref: '#/components/responses/Unauthorized' },
@@ -862,9 +939,118 @@ export const openApiDocument = {
         tags: ['runs'],
         summary: 'Historial de corridas por sprint',
         security: [{ BearerAuth: [] }],
-        parameters: [{ name: 'sprintId', in: 'path', required: true, schema: { type: 'string' } }],
+        parameters: [
+          { name: 'sprintId', in: 'path', required: true, schema: { type: 'string' } },
+          { name: 'cursor', in: 'query', required: false, schema: { type: 'string', format: 'date-time' } },
+          { name: 'limit', in: 'query', required: false, schema: { type: 'integer', minimum: 1, maximum: 100 } },
+        ],
         responses: {
           '200': { description: 'Historial de corridas', content: jsonContent('SprintRunListResponse') },
+          '400': { $ref: '#/components/responses/BadRequest' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '404': { $ref: '#/components/responses/NotFound' },
+        },
+      },
+    },
+    '/planning-cycles': {
+      get: {
+        tags: ['planning-cycles'],
+        summary: 'Listar ciclos de planificacion',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'cursor', in: 'query', required: false, schema: { type: 'string', format: 'date-time' } },
+          { name: 'limit', in: 'query', required: false, schema: { type: 'integer', minimum: 1, maximum: 100 } },
+        ],
+        responses: {
+          '200': { description: 'Lista de ciclos', content: jsonContent('PlanningCycleListResponse') },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+        },
+      },
+      post: {
+        tags: ['planning-cycles'],
+        summary: 'Crear ciclo de planificacion',
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: jsonContent('CreatePlanningCycleRequest'),
+        },
+        responses: {
+          '201': { description: 'Ciclo creado', content: jsonContent('PlanningCycle') },
+          '400': { $ref: '#/components/responses/BadRequest' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+        },
+      },
+    },
+    '/planning-cycles/{cycleId}': {
+      get: {
+        tags: ['planning-cycles'],
+        summary: 'Obtener ciclo de planificacion',
+        security: [{ BearerAuth: [] }],
+        parameters: [{ name: 'cycleId', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '200': { description: 'Ciclo', content: jsonContent('PlanningCycle') },
+          '400': { $ref: '#/components/responses/BadRequest' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '404': { $ref: '#/components/responses/NotFound' },
+        },
+      },
+    },
+    '/planning-cycles/{cycleId}/sprints': {
+      post: {
+        tags: ['planning-cycles'],
+        summary: 'Agregar sprint a ciclo',
+        security: [{ BearerAuth: [] }],
+        parameters: [{ name: 'cycleId', in: 'path', required: true, schema: { type: 'string' } }],
+        requestBody: {
+          required: true,
+          content: jsonContent('AddPlanningCycleSprintRequest'),
+        },
+        responses: {
+          '200': { description: 'Ciclo actualizado', content: jsonContent('PlanningCycle') },
+          '400': { $ref: '#/components/responses/BadRequest' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '404': { $ref: '#/components/responses/NotFound' },
+          '409': { $ref: '#/components/responses/Conflict' },
+          '422': { $ref: '#/components/responses/Unprocessable' },
+        },
+      },
+    },
+    '/planning-cycles/{cycleId}/runs': {
+      post: {
+        tags: ['planning-cycles'],
+        summary: 'Ejecutar ciclo de planificacion',
+        security: [{ BearerAuth: [] }],
+        parameters: [{ name: 'cycleId', in: 'path', required: true, schema: { type: 'string' } }],
+        requestBody: {
+          required: true,
+          content: jsonContent('RunPlanningCycleRequest'),
+        },
+        responses: {
+          '200': { description: 'Corrida de ciclo ejecutada', content: jsonContent('PlanningCycleRun') },
+          '400': { $ref: '#/components/responses/BadRequest' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '404': { $ref: '#/components/responses/NotFound' },
+          '422': { $ref: '#/components/responses/Unprocessable' },
+          '500': { $ref: '#/components/responses/InternalServerError' },
+        },
+      },
+      get: {
+        tags: ['planning-cycles'],
+        summary: 'Listar corridas de ciclo',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'cycleId', in: 'path', required: true, schema: { type: 'string' } },
+          { name: 'cursor', in: 'query', required: false, schema: { type: 'string', format: 'date-time' } },
+          { name: 'limit', in: 'query', required: false, schema: { type: 'integer', minimum: 1, maximum: 100 } },
+        ],
+        responses: {
+          '200': { description: 'Historial de corridas de ciclo', content: jsonContent('PlanningCycleRunListResponse') },
           '400': { $ref: '#/components/responses/BadRequest' },
           '401': { $ref: '#/components/responses/Unauthorized' },
           '403': { $ref: '#/components/responses/Forbidden' },

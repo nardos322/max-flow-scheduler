@@ -5,7 +5,7 @@ import {
   addDoctorToSprint,
   createSprint,
   findSprintOrNull,
-  getAllSprints,
+  getSprintsPage,
   removeDoctorFromSprint,
   updateSprintGlobalConfig,
 } from '../../services/sprint/sprint.service.js';
@@ -36,9 +36,28 @@ export const createSprintController: RequestHandler = async (req, res, next) => 
   }
 };
 
-export const listSprintsController: RequestHandler = async (_req, res, next) => {
+function parsePageQuery(query: Record<string, unknown>): { limit: number; cursor?: string } | { error: string } {
+  const rawLimit = typeof query.limit === 'string' ? query.limit : undefined;
+  const rawCursor = typeof query.cursor === 'string' ? query.cursor : undefined;
+  const limit = rawLimit ? Number(rawLimit) : 20;
+  if (!Number.isInteger(limit) || limit <= 0 || limit > 100) {
+    return { error: 'Invalid limit query param; expected integer between 1 and 100' };
+  }
+  if (rawCursor && Number.isNaN(new Date(rawCursor).getTime())) {
+    return { error: 'Invalid cursor query param; expected ISO datetime' };
+  }
+  return { limit, ...(rawCursor ? { cursor: rawCursor } : {}) };
+}
+
+export const listSprintsController: RequestHandler = async (req, res, next) => {
   try {
-    res.status(200).json({ items: await getAllSprints() });
+    const parsed = parsePageQuery((req.query ?? {}) as Record<string, unknown>);
+    if ('error' in parsed) {
+      next(new HttpError(400, { error: parsed.error }));
+      return;
+    }
+
+    res.status(200).json(await getSprintsPage(parsed));
   } catch (error) {
     next(error);
   }

@@ -8,6 +8,7 @@ import { solveScheduleWithEngine } from '../../services/solve-schedule.service.j
 import {
   buildSolveRequestFromSprint,
   getSprintRunHistory,
+  getSprintRunHistoryPage,
   registerFailedSprintRun,
   registerSucceededSprintRun,
 } from '../../services/sprint/sprint-run.service.js';
@@ -70,7 +71,25 @@ export const listSprintRunsController: RequestHandler = async (req, res, next) =
       return;
     }
 
-    res.status(200).json({ items: await getSprintRunHistory(sprintId) });
+    const query = (req.query ?? {}) as Record<string, unknown>;
+    const rawLimit = typeof query.limit === 'string' ? query.limit : undefined;
+    const rawCursor = typeof query.cursor === 'string' ? query.cursor : undefined;
+    const limit = rawLimit ? Number(rawLimit) : 20;
+    if (!Number.isInteger(limit) || limit <= 0 || limit > 100) {
+      next(new HttpError(400, { error: 'Invalid limit query param; expected integer between 1 and 100' }));
+      return;
+    }
+    if (rawCursor && Number.isNaN(new Date(rawCursor).getTime())) {
+      next(new HttpError(400, { error: 'Invalid cursor query param; expected ISO datetime' }));
+      return;
+    }
+
+    if (!rawCursor && !rawLimit) {
+      res.status(200).json({ items: await getSprintRunHistory(sprintId) });
+      return;
+    }
+
+    res.status(200).json(await getSprintRunHistoryPage(sprintId, { limit, ...(rawCursor ? { cursor: rawCursor } : {}) }));
   } catch (error) {
     next(error);
   }

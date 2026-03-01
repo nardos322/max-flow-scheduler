@@ -4,6 +4,7 @@ import { createAuthRoutes } from './auth.routes.js';
 import { createDoctorRoutes } from './doctor.routes.js';
 import { createDocsRoutes } from './docs.routes.js';
 import { createHealthRoutes } from './health.routes.js';
+import { createPlanningCycleRoutes } from './planning-cycle.routes.js';
 import { createPeriodRoutes } from './period.routes.js';
 import { createScheduleRoutes } from './schedule.routes.js';
 import { createSprintAvailabilityRoutes } from './sprint/sprint-availability.routes.js';
@@ -19,6 +20,7 @@ export function createApiRoutes(): Router {
   router.use(createDoctorRoutes());
   router.use(createPeriodRoutes());
   router.use(createScheduleRoutes());
+  router.use(createPlanningCycleRoutes());
   router.use(createSprintRoutes());
   router.use(createSprintAvailabilityRoutes());
   router.use(createSprintRunRoutes());

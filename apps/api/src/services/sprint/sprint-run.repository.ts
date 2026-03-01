@@ -56,18 +56,42 @@ function mapPrismaRunRecordToDomain(record: PrismaRunRecord): SprintRun {
 }
 
 async function listSprintRunsPrisma(sprintId: string): Promise<SprintRun[]> {
+  const page = await listSprintRunsPagePrisma(sprintId, { limit: 10_000 });
+  return page.items;
+}
+
+export type SprintRunPageOptions = {
+  limit: number;
+  cursor?: string;
+};
+
+export type SprintRunPageResult = {
+  items: SprintRun[];
+  nextCursor?: string;
+};
+
+async function listSprintRunsPagePrisma(sprintId: string, options: SprintRunPageOptions): Promise<SprintRunPageResult> {
   const prisma = (await getPrismaClient()) as unknown as {
     sprintRun: {
       findMany: (args: Record<string, unknown>) => Promise<PrismaRunRecord[]>;
     };
   };
 
+  const cursorDate = options.cursor ? new Date(options.cursor) : null;
   const rows = await prisma.sprintRun.findMany({
-    where: { sprintId },
+    where: {
+      sprintId,
+      ...(cursorDate ? { executedAt: { gt: cursorDate } } : {}),
+    },
+    take: options.limit + 1,
     orderBy: { executedAt: 'asc' },
   });
 
-  return rows.map(mapPrismaRunRecordToDomain);
+  const mapped = rows.map(mapPrismaRunRecordToDomain);
+  const hasMore = mapped.length > options.limit;
+  const items = hasMore ? mapped.slice(0, options.limit) : mapped;
+  const nextCursor = hasMore ? items[items.length - 1]?.executedAt : undefined;
+  return { items, ...(nextCursor ? { nextCursor } : {}) };
 }
 
 async function clearSprintRunStorePrisma(): Promise<void> {
@@ -86,6 +110,10 @@ export async function appendSprintRun(run: SprintRun): Promise<SprintRun> {
 
 export async function listSprintRuns(sprintId: string): Promise<SprintRun[]> {
   return listSprintRunsPrisma(sprintId);
+}
+
+export async function listSprintRunsPage(sprintId: string, options: SprintRunPageOptions): Promise<SprintRunPageResult> {
+  return listSprintRunsPagePrisma(sprintId, options);
 }
 
 export async function clearSprintRunStore(): Promise<void> {

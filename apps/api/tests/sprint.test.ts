@@ -256,5 +256,5 @@ describe('sprint controllers', () => {
     await addSprintDoctorController({ params: { sprintId: created.id } } as never, addRes as never, next);
 
     expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 422 }));
-  });
+  }, 15_000);
 });

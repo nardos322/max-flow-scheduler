@@ -366,6 +366,17 @@ export const updateSprintGlobalConfigRequestSchema = z.object({
 });
 
 export const runStatusSchema = z.enum(['succeeded', 'failed']);
+export const planningCycleRunStatusSchema = z.enum(['succeeded', 'partial-failed', 'failed']);
+
+export const paginationQuerySchema = z.object({
+  cursor: z.string().datetime().optional(),
+  limit: z.number().int().positive().max(100).default(20),
+});
+
+export const sprintListResponseSchema = z.object({
+  items: z.array(sprintSchema),
+  nextCursor: z.string().datetime().optional(),
+});
 
 export const sprintRunSchema = z.object({
   id: z.string().min(1),
@@ -387,6 +398,65 @@ export const markSprintReadyRequestSchema = z.object({
 });
 
 export const runSprintSolveRequestSchema = z.object({}).strict();
+
+export const sprintRunListResponseSchema = z.object({
+  items: z.array(sprintRunSchema),
+  nextCursor: z.string().datetime().optional(),
+});
+
+export const planningCycleStatusSchema = z.enum(['draft']);
+
+export const planningCycleSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  status: planningCycleStatusSchema,
+  sprintIds: z.array(z.string().min(1)),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+export const createPlanningCycleRequestSchema = z.object({
+  name: z.string().min(1),
+});
+
+export const addPlanningCycleSprintRequestSchema = z.object({
+  sprintId: z.string().min(1),
+  orderIndex: z.number().int().positive().optional(),
+});
+
+export const runPlanningCycleRequestSchema = z.object({}).strict();
+
+export const planningCycleRunItemSchema = z.object({
+  sprintId: z.string().min(1),
+  executedAt: z.string().datetime(),
+  status: runStatusSchema,
+  inputSnapshot: solveRequestSchema.optional(),
+  outputSnapshot: solveResponseSchema.optional(),
+  error: z
+    .object({
+      code: z.string().min(1),
+      message: z.string().min(1),
+    })
+    .optional(),
+});
+
+export const planningCycleRunSchema = z.object({
+  id: z.string().min(1),
+  cycleId: z.string().min(1),
+  executedAt: z.string().datetime(),
+  status: planningCycleRunStatusSchema,
+  items: z.array(planningCycleRunItemSchema),
+});
+
+export const planningCycleListResponseSchema = z.object({
+  items: z.array(planningCycleSchema),
+  nextCursor: z.string().datetime().optional(),
+});
+
+export const planningCycleRunListResponseSchema = z.object({
+  items: z.array(planningCycleRunSchema),
+  nextCursor: z.string().datetime().optional(),
+});
 
 export type SolveRequest = z.infer<typeof solveRequestSchema>;
 export type SolveResponse = z.infer<typeof solveResponseSchema>;
@@ -411,3 +481,16 @@ export type UpdateSprintGlobalConfigRequest = z.infer<typeof updateSprintGlobalC
 export type SprintRun = z.infer<typeof sprintRunSchema>;
 export type MarkSprintReadyRequest = z.infer<typeof markSprintReadyRequestSchema>;
 export type RunSprintSolveRequest = z.infer<typeof runSprintSolveRequestSchema>;
+export type PaginationQuery = z.infer<typeof paginationQuerySchema>;
+export type SprintListResponse = z.infer<typeof sprintListResponseSchema>;
+export type SprintRunListResponse = z.infer<typeof sprintRunListResponseSchema>;
+export type PlanningCycleStatus = z.infer<typeof planningCycleStatusSchema>;
+export type PlanningCycle = z.infer<typeof planningCycleSchema>;
+export type CreatePlanningCycleRequest = z.infer<typeof createPlanningCycleRequestSchema>;
+export type AddPlanningCycleSprintRequest = z.infer<typeof addPlanningCycleSprintRequestSchema>;
+export type RunPlanningCycleRequest = z.infer<typeof runPlanningCycleRequestSchema>;
+export type PlanningCycleRunStatus = z.infer<typeof planningCycleRunStatusSchema>;
+export type PlanningCycleRunItem = z.infer<typeof planningCycleRunItemSchema>;
+export type PlanningCycleRun = z.infer<typeof planningCycleRunSchema>;
+export type PlanningCycleListResponse = z.infer<typeof planningCycleListResponseSchema>;
+export type PlanningCycleRunListResponse = z.infer<typeof planningCycleRunListResponseSchema>;

@@ -6,10 +6,19 @@ import {
   addSprintDoctorRequestSchema,
   doctorCatalogSchema,
   markSprintReadyRequestSchema,
+  planningCycleListResponseSchema,
+  planningCycleRunListResponseSchema,
+  planningCycleRunSchema,
+  planningCycleSchema,
+  createPlanningCycleRequestSchema,
+  addPlanningCycleSprintRequestSchema,
+  runPlanningCycleRequestSchema,
   periodCatalogSchema,
   plannerOverrideAvailabilityRequestSchema,
   replacePeriodDemandsRequestSchema,
   runSprintSolveRequestSchema,
+  sprintListResponseSchema,
+  sprintRunListResponseSchema,
   setDoctorAvailabilityRequestSchema,
   solveRequestSchema,
   solveResponseSchema,
@@ -312,5 +321,75 @@ describe('sprint schemas', () => {
     });
 
     expect(result.success).toBe(true);
+  });
+
+  it('accepts sprint list response with cursor', () => {
+    const result = sprintListResponseSchema.safeParse({
+      items: [],
+      nextCursor: '2026-03-01T10:00:00.000Z',
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts sprint run list response with cursor', () => {
+    const result = sprintRunListResponseSchema.safeParse({
+      items: [],
+      nextCursor: '2026-03-01T10:00:00.000Z',
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts planning cycle payloads and entities', () => {
+    const createResult = createPlanningCycleRequestSchema.safeParse({ name: 'Q2 Plan' });
+    expect(createResult.success).toBe(true);
+
+    const addSprintResult = addPlanningCycleSprintRequestSchema.safeParse({
+      sprintId: 'spr-1',
+      orderIndex: 1,
+    });
+    expect(addSprintResult.success).toBe(true);
+
+    const cycleResult = planningCycleSchema.safeParse({
+      id: 'cyc-1',
+      name: 'Q2 Plan',
+      status: 'draft',
+      sprintIds: ['spr-1'],
+      createdAt: '2026-03-01T10:00:00.000Z',
+      updatedAt: '2026-03-01T10:00:00.000Z',
+    });
+    expect(cycleResult.success).toBe(true);
+
+    const runResult = planningCycleRunSchema.safeParse({
+      id: 'cycle-run-1',
+      cycleId: 'cyc-1',
+      executedAt: '2026-03-01T10:01:00.000Z',
+      status: 'partial-failed',
+      items: [
+        {
+          sprintId: 'spr-1',
+          executedAt: '2026-03-01T10:01:00.000Z',
+          status: 'failed',
+          error: { code: 'SPRINT_NOT_READY', message: 'Sprint is not ready to solve' },
+        },
+      ],
+    });
+    expect(runResult.success).toBe(true);
+
+    const runReqResult = runPlanningCycleRequestSchema.safeParse({});
+    expect(runReqResult.success).toBe(true);
+
+    const cycleListResult = planningCycleListResponseSchema.safeParse({
+      items: [],
+      nextCursor: '2026-03-01T10:00:00.000Z',
+    });
+    expect(cycleListResult.success).toBe(true);
+
+    const cycleRunListResult = planningCycleRunListResponseSchema.safeParse({
+      items: [],
+      nextCursor: '2026-03-01T10:00:00.000Z',
+    });
+    expect(cycleRunListResult.success).toBe(true);
   });
 });

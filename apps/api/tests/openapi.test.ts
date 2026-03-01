@@ -8,6 +8,7 @@ describe('openApiDocument', () => {
     expect(openApiDocument.paths['/health']).toBeDefined();
     expect(openApiDocument.paths['/schedule/solve']).toBeDefined();
     expect(openApiDocument.paths['/sprints/{sprintId}/runs']).toBeDefined();
+    expect(openApiDocument.paths['/planning-cycles']).toBeDefined();
   });
 
   it('marks direct solve as transitional for MVP', () => {
@@ -34,5 +35,13 @@ describe('openApiDocument', () => {
     expect(
       openApiDocument.paths['/sprints/{sprintId}/runs'].get.responses['200'].content['application/json'].schema.$ref,
     ).toBe('#/components/schemas/SprintRunListResponse');
+  });
+
+  it('declares planning cycle schemas and paths', () => {
+    expect(openApiDocument.components.schemas.PlanningCycle).toBeDefined();
+    expect(openApiDocument.components.schemas.PlanningCycleRun).toBeDefined();
+    expect(
+      openApiDocument.paths['/planning-cycles/{cycleId}/runs'].post.responses['200'].content['application/json'].schema.$ref,
+    ).toBe('#/components/schemas/PlanningCycleRun');
   });
 });

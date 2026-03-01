@@ -8,7 +8,7 @@ import type {
 } from '@scheduler/domain';
 import { ensureActiveDoctorsOrMissing } from '../doctor/doctor.service.js';
 import { getPeriodById } from '../period/period.service.js';
-import { getSprintById, listSprints, saveSprint } from './sprint.repository.js';
+import { getSprintById, listSprints, listSprintsPage, saveSprint, type SprintPageResult } from './sprint.repository.js';
 
 function createSprintId(): string {
   return `spr-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -47,6 +47,10 @@ export async function findSprintOrNull(sprintId: string): Promise<Sprint | null>
 
 export async function getAllSprints(): Promise<Sprint[]> {
   return listSprints();
+}
+
+export async function getSprintsPage(options: { limit: number; cursor?: string }): Promise<SprintPageResult> {
+  return listSprintsPage(options);
 }
 
 export async function updateSprintGlobalConfig(

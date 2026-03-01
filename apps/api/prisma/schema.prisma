@@ -27,6 +27,16 @@ enum RunStatus {
   failed
 }
 
+enum PlanningCycleStatus {
+  draft
+}
+
+enum PlanningCycleRunStatus {
+  succeeded
+  partial_failed
+  failed
+}
+
 model Sprint {
   id                       String              @id
   name                     String
@@ -44,6 +54,64 @@ model Sprint {
   @@map("sprints")
   @@index([periodId], map: "idx_sprints_period_id")
   @@index([status], map: "idx_sprints_status")
+}
+
+model PlanningCycle {
+  id        String               @id
+  name      String
+  status    PlanningCycleStatus
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+  sprints   PlanningCycleSprint[]
+  runs      PlanningCycleRun[]
+
+  @@map("planning_cycles")
+  @@index([status], map: "idx_planning_cycles_status")
+}
+
+model PlanningCycleSprint {
+  id         String        @id
+  cycleId    String
+  sprintId   String
+  orderIndex Int
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  cycle      PlanningCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+
+  @@map("planning_cycle_sprints")
+  @@unique([cycleId, sprintId], map: "uq_planning_cycle_sprints_cycle_sprint")
+  @@unique([cycleId, orderIndex], map: "uq_planning_cycle_sprints_cycle_order")
+  @@index([cycleId], map: "idx_planning_cycle_sprints_cycle_id")
+  @@index([sprintId], map: "idx_planning_cycle_sprints_sprint_id")
+}
+
+model PlanningCycleRun {
+  id         String                @id
+  cycleId    String
+  executedAt DateTime              @default(now())
+  status     PlanningCycleRunStatus
+  cycle      PlanningCycle         @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  items      PlanningCycleRunItem[]
+
+  @@map("planning_cycle_runs")
+  @@index([cycleId, executedAt], map: "idx_planning_cycle_runs_cycle_executed_at")
+}
+
+model PlanningCycleRunItem {
+  id           String           @id
+  runId        String
+  sprintId     String
+  executedAt   DateTime
+  status       RunStatus
+  inputSnapshot  Json?
+  outputSnapshot Json?
+  errorCode    String?
+  errorMessage String?
+  run          PlanningCycleRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@map("planning_cycle_run_items")
+  @@index([runId], map: "idx_planning_cycle_run_items_run_id")
+  @@index([sprintId], map: "idx_planning_cycle_run_items_sprint_id")
 }
 
 model SprintDoctor {

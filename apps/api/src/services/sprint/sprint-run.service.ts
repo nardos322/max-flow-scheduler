@@ -1,5 +1,5 @@
 import type { SolveRequest, SolveResponse, SprintRun } from '@scheduler/domain';
-import { appendSprintRun, listSprintRuns } from './sprint-run.repository.js';
+import { appendSprintRun, listSprintRuns, listSprintRunsPage, type SprintRunPageResult } from './sprint-run.repository.js';
 import { getDoctorById } from '../doctor/doctor.service.js';
 import { getPeriodById } from '../period/period.service.js';
 import { getSprintById } from './sprint.repository.js';
@@ -48,6 +48,13 @@ export function registerFailedSprintRun(
 
 export function getSprintRunHistory(sprintId: string): Promise<SprintRun[]> {
   return listSprintRuns(sprintId);
+}
+
+export function getSprintRunHistoryPage(
+  sprintId: string,
+  options: { limit: number; cursor?: string },
+): Promise<SprintRunPageResult> {
+  return listSprintRunsPage(sprintId, options);
 }
 
 function buildInclusiveDayRange(startsOn: string, endsOn: string): string[] {
