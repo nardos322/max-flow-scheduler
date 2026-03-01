@@ -147,6 +147,7 @@ _Ultima actualizacion manual: 2026-03-01 (alineado con evidencia en codigo/repos
 ### US-601 Seguridad baseline (P1, 5)
 - T-601.1 Headers, rate-limit, body limits, sanitizacion de errores. Owner: `security-compliance`. Estado: `done`
 - T-601.2 Secret scanning y politica de secretos. Owner: `security-compliance`. Estado: `done`
+- T-601.3 Bootstrap JWT de desarrollo con guardas de entorno (`AUTH_DEV_TOKEN_ENABLED`) para operar API sin login backend propio. Owner: `security-compliance`. Estado: `done`
 - Done cuando:
   - Checklist seguridad aprobado
 

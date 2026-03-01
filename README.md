@@ -58,6 +58,14 @@ Monorepo para planificacion de medicos en vacaciones usando un solver de max-flo
 - Prioridad de verificacion JWT en runtime:
   - `JWT_JWKS_URL` -> `JWT_PUBLIC_KEY` -> `JWT_SECRET`
 - La API valida config de auth al arrancar (fail-fast) y corta startup si falta configuracion requerida.
+- Bootstrap de token para desarrollo (opcional):
+  - Habilitar `AUTH_DEV_TOKEN_ENABLED=true` (incluido en `.env.development.example`).
+  - Endpoint: `POST /auth/dev/token` (publico, solo cuando el flag esta activo).
+  - Requiere modo `shared-secret` (`JWT_SECRET`) y emite token HS256 con claims `sub`, `role`, `iss`, `aud`, `exp`.
+  - Request:
+    - `{ "userId": "planner-1", "role": "planner", "expiresInSeconds": 3600 }`
+  - Uso rapido:
+    - `curl -X POST http://localhost:3000/auth/dev/token -H "content-type: application/json" -d '{"userId":"doctor-7","role":"doctor"}'`
 
 ## Hardening API (MVP)
 - Headers de seguridad por defecto en todas las respuestas.

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { resolveActorMiddleware } from '../middlewares/auth/actor.middleware.js';
+import { createAuthRoutes } from './auth.routes.js';
 import { createDoctorRoutes } from './doctor.routes.js';
 import { createHealthRoutes } from './health.routes.js';
 import { createPeriodRoutes } from './period.routes.js';
@@ -11,6 +12,7 @@ import { createSprintRunRoutes } from './sprint/sprint-run.routes.js';
 export function createApiRoutes(): Router {
   const router = Router();
   router.use(createHealthRoutes());
+  router.use(createAuthRoutes());
   router.use(resolveActorMiddleware);
   router.use(createDoctorRoutes());
   router.use(createPeriodRoutes());
