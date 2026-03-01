@@ -67,6 +67,66 @@ export async function updateSprintGlobalConfig(
   return saveSprint(updated);
 }
 
+export type AddSprintDoctorResult =
+  | { sprint: Sprint }
+  | { error: 'SPRINT_NOT_FOUND' | 'SPRINT_NOT_DRAFT' | 'DOCTOR_NOT_FOUND_OR_INACTIVE' | 'DOCTOR_ALREADY_IN_SPRINT' };
+
+export async function addDoctorToSprint(sprintId: string, doctorId: string): Promise<AddSprintDoctorResult> {
+  const sprint = await getSprintById(sprintId);
+  if (!sprint) {
+    return { error: 'SPRINT_NOT_FOUND' };
+  }
+
+  if (sprint.status !== 'draft') {
+    return { error: 'SPRINT_NOT_DRAFT' };
+  }
+
+  if (sprint.doctorIds.includes(doctorId)) {
+    return { error: 'DOCTOR_ALREADY_IN_SPRINT' };
+  }
+
+  const doctorCheck = await ensureActiveDoctorsOrMissing([doctorId]);
+  if (doctorCheck.missing.length > 0) {
+    return { error: 'DOCTOR_NOT_FOUND_OR_INACTIVE' };
+  }
+
+  const updated: Sprint = {
+    ...sprint,
+    doctorIds: [...sprint.doctorIds, doctorId],
+    updatedAt: new Date().toISOString(),
+  };
+
+  return { sprint: await saveSprint(updated) };
+}
+
+export type RemoveSprintDoctorResult =
+  | { sprint: Sprint }
+  | { error: 'SPRINT_NOT_FOUND' | 'SPRINT_NOT_DRAFT' | 'DOCTOR_NOT_IN_SPRINT' };
+
+export async function removeDoctorFromSprint(sprintId: string, doctorId: string): Promise<RemoveSprintDoctorResult> {
+  const sprint = await getSprintById(sprintId);
+  if (!sprint) {
+    return { error: 'SPRINT_NOT_FOUND' };
+  }
+
+  if (sprint.status !== 'draft') {
+    return { error: 'SPRINT_NOT_DRAFT' };
+  }
+
+  if (!sprint.doctorIds.includes(doctorId)) {
+    return { error: 'DOCTOR_NOT_IN_SPRINT' };
+  }
+
+  const updated: Sprint = {
+    ...sprint,
+    doctorIds: sprint.doctorIds.filter((id) => id !== doctorId),
+    availability: sprint.availability.filter((entry) => entry.doctorId !== doctorId),
+    updatedAt: new Date().toISOString(),
+  };
+
+  return { sprint: await saveSprint(updated) };
+}
+
 export type UpdateDoctorAvailabilityResult =
   | { sprint: Sprint }
   | { error: 'SPRINT_NOT_FOUND' | 'DOCTOR_NOT_FOUND' | 'PERIOD_NOT_FOUND' | 'PERIOD_MISMATCH' | 'DAY_OUT_OF_RANGE' };

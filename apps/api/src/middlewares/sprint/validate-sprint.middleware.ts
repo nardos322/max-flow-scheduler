@@ -1,7 +1,9 @@
 import type { RequestHandler } from 'express';
 import {
+  addSprintDoctorRequestSchema,
   createSprintRequestSchema,
   updateSprintGlobalConfigRequestSchema,
+  type AddSprintDoctorRequest,
   type CreateSprintRequest,
   type UpdateSprintGlobalConfigRequest,
 } from '@scheduler/domain';
@@ -9,6 +11,7 @@ import { HttpError } from '../../errors/http.error.js';
 
 export type SprintLocals = {
   createSprintRequest?: CreateSprintRequest;
+  addSprintDoctorRequest?: AddSprintDoctorRequest;
   updateGlobalConfigRequest?: UpdateSprintGlobalConfigRequest;
 };
 
@@ -38,5 +41,16 @@ export const validateUpdateSprintGlobalConfigMiddleware: RequestHandler = (req, 
   }
 
   (res.locals as SprintLocals).updateGlobalConfigRequest = parsed.data;
+  next();
+};
+
+export const validateAddSprintDoctorMiddleware: RequestHandler = (req, res, next) => {
+  const parsed = addSprintDoctorRequestSchema.safeParse(req.body);
+  if (!parsed.success) {
+    next(new HttpError(400, { error: 'Invalid add sprint doctor payload', issues: mapIssues(parsed.error.issues) }));
+    return;
+  }
+
+  (res.locals as SprintLocals).addSprintDoctorRequest = parsed.data;
   next();
 };

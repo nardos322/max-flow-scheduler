@@ -357,6 +357,10 @@ export const createSprintRequestSchema = z.object({
   doctorIds: z.array(z.string().min(1)).default([]),
 });
 
+export const addSprintDoctorRequestSchema = z.object({
+  doctorId: z.string().min(1),
+});
+
 export const updateSprintGlobalConfigRequestSchema = z.object({
   globalConfig: sprintGlobalConfigSchema,
 });
@@ -402,6 +406,7 @@ export type AvailabilityDay = z.infer<typeof availabilityDaySchema>;
 export type SetDoctorAvailabilityRequest = z.infer<typeof setDoctorAvailabilityRequestSchema>;
 export type PlannerOverrideAvailabilityRequest = z.infer<typeof plannerOverrideAvailabilityRequestSchema>;
 export type CreateSprintRequest = z.infer<typeof createSprintRequestSchema>;
+export type AddSprintDoctorRequest = z.infer<typeof addSprintDoctorRequestSchema>;
 export type UpdateSprintGlobalConfigRequest = z.infer<typeof updateSprintGlobalConfigRequestSchema>;
 export type SprintRun = z.infer<typeof sprintRunSchema>;
 export type MarkSprintReadyRequest = z.infer<typeof markSprintReadyRequestSchema>;

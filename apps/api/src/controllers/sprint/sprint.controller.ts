@@ -2,9 +2,11 @@ import type { RequestHandler } from 'express';
 import { HttpError } from '../../errors/http.error.js';
 import type { SprintLocals } from '../../middlewares/sprint/validate-sprint.middleware.js';
 import {
+  addDoctorToSprint,
   createSprint,
   findSprintOrNull,
   getAllSprints,
+  removeDoctorFromSprint,
   updateSprintGlobalConfig,
 } from '../../services/sprint/sprint.service.js';
 
@@ -83,6 +85,73 @@ export const updateSprintGlobalConfigController: RequestHandler = async (req, re
     }
 
     res.status(200).json(sprint);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const addSprintDoctorController: RequestHandler = async (req, res, next) => {
+  try {
+    const payload = (res.locals as SprintLocals).addSprintDoctorRequest;
+    if (!payload) {
+      next(new HttpError(500, { error: 'Add sprint doctor payload not validated' }));
+      return;
+    }
+
+    const sprintId = req.params.sprintId;
+    if (!sprintId) {
+      next(new HttpError(400, { error: 'Missing sprintId route param' }));
+      return;
+    }
+
+    const result = await addDoctorToSprint(sprintId, payload.doctorId);
+    if ('error' in result) {
+      if (result.error === 'SPRINT_NOT_FOUND') {
+        next(new HttpError(404, { error: 'Sprint not found' }));
+        return;
+      }
+      if (result.error === 'DOCTOR_NOT_FOUND_OR_INACTIVE') {
+        next(new HttpError(404, { error: 'Doctor not found or inactive' }));
+        return;
+      }
+      if (result.error === 'DOCTOR_ALREADY_IN_SPRINT') {
+        next(new HttpError(409, { error: 'Doctor already in sprint' }));
+        return;
+      }
+      next(new HttpError(422, { error: 'Sprint participants can only be edited in draft status' }));
+      return;
+    }
+
+    res.status(200).json(result.sprint);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const removeSprintDoctorController: RequestHandler = async (req, res, next) => {
+  try {
+    const sprintId = req.params.sprintId;
+    const doctorId = req.params.doctorId;
+    if (!sprintId || !doctorId) {
+      next(new HttpError(400, { error: 'Missing sprintId or doctorId route param' }));
+      return;
+    }
+
+    const result = await removeDoctorFromSprint(sprintId, doctorId);
+    if ('error' in result) {
+      if (result.error === 'SPRINT_NOT_FOUND') {
+        next(new HttpError(404, { error: 'Sprint not found' }));
+        return;
+      }
+      if (result.error === 'DOCTOR_NOT_IN_SPRINT') {
+        next(new HttpError(404, { error: 'Doctor not found in sprint' }));
+        return;
+      }
+      next(new HttpError(422, { error: 'Sprint participants can only be edited in draft status' }));
+      return;
+    }
+
+    res.status(200).json(result.sprint);
   } catch (error) {
     next(error);
   }

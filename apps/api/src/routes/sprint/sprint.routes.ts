@@ -1,12 +1,15 @@
 import { Router } from 'express';
 import {
+  addSprintDoctorController,
   createSprintController,
   getSprintController,
   listSprintsController,
+  removeSprintDoctorController,
   updateSprintGlobalConfigController,
 } from '../../controllers/sprint/sprint.controller.js';
 import { requireRoleMiddleware } from '../../middlewares/auth/actor.middleware.js';
 import {
+  validateAddSprintDoctorMiddleware,
   validateCreateSprintMiddleware,
   validateUpdateSprintGlobalConfigMiddleware,
 } from '../../middlewares/sprint/validate-sprint.middleware.js';
@@ -23,6 +26,13 @@ export function createSprintRoutes(): Router {
     validateUpdateSprintGlobalConfigMiddleware,
     updateSprintGlobalConfigController,
   );
+  router.post(
+    '/sprints/:sprintId/doctors',
+    requireRoleMiddleware('planner'),
+    validateAddSprintDoctorMiddleware,
+    addSprintDoctorController,
+  );
+  router.delete('/sprints/:sprintId/doctors/:doctorId', requireRoleMiddleware('planner'), removeSprintDoctorController);
 
   return router;
 }
