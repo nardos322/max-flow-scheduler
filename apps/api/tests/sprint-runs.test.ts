@@ -170,7 +170,7 @@ describe('sprint run controllers', () => {
         ]),
       }),
     );
-  });
+  }, 15_000);
 
   it('stores failed run when solver response mismatches shared contract', async () => {
     const doctor = await createDoctor({ name: 'Dr. Uno', active: true, maxTotalDaysDefault: 8 });

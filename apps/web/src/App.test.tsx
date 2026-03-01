@@ -1,15 +1,10 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App.js';
+import { renderWithQueryClient } from './test-utils.js';
 
 function renderApp() {
-  const queryClient = new QueryClient();
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <App />
-    </QueryClientProvider>,
-  );
+  return renderWithQueryClient(<App />);
 }
 
 describe('App', () => {
@@ -200,6 +195,10 @@ describe('App', () => {
       );
     });
 
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Ejecutar corrida' })).toBeEnabled();
+    });
+
     fireEvent.click(screen.getByRole('button', { name: 'Ejecutar corrida' }));
 
     await waitFor(() => {
@@ -209,10 +208,10 @@ describe('App', () => {
       );
     });
 
-    expect(screen.getByText('Resultado de la ultima corrida (succeeded)')).toBeInTheDocument();
+    expect(await screen.findByText('Resultado de la ultima corrida (succeeded)')).toBeInTheDocument();
     expect(screen.getAllByText('2026-03-02').length).toBeGreaterThan(0);
     expect(screen.getAllByText('d1').length).toBeGreaterThan(0);
-  }, 10000);
+  });
 
   it('saves doctor self-service availability and refreshes table', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
@@ -318,7 +317,7 @@ describe('App', () => {
     expect(screen.getByText('doctor-self-service')).toBeInTheDocument();
     expect(screen.getByText('doc-1')).toBeInTheDocument();
     expect(screen.getAllByText('2026-03-02').length).toBeGreaterThan(0);
-  }, 10000);
+  });
 
   it('saves planner override availability and refreshes table', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
@@ -424,5 +423,5 @@ describe('App', () => {
     expect(screen.getByText('planner-override')).toBeInTheDocument();
     expect(screen.getByText('doc-2')).toBeInTheDocument();
     expect(screen.getAllByText('2026-03-04').length).toBeGreaterThan(0);
-  }, 10000);
+  });
 });

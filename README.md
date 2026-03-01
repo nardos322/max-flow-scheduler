@@ -30,6 +30,8 @@ Monorepo para planificacion de medicos en vacaciones usando un solver de max-flo
 - `pnpm typecheck`
 - `pnpm test`
 - `pnpm test:engine-cpp`
+- `pnpm test:web:stability`
+- `pnpm bench:web-tests`
 
 ## Bootstrap de base de datos (API)
 - Prisma schema: `apps/api/prisma/schema.prisma`

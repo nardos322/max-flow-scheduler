@@ -13,6 +13,8 @@
     "test:engine-cpp": "bash scripts/run-engine-tests.sh",
     "bench:engine-cpp": "node scripts/benchmark-engine.mjs",
     "bench:engine-cpp:check": "node scripts/check-engine-benchmark.mjs",
+    "bench:web-tests": "bash scripts/run-web-test-stability.sh --runs 5 --no-enforce-budgets --output docs/benchmarks/web-test-stability-baseline.json",
+    "test:web:stability": "bash scripts/run-web-test-stability.sh --runs 3 --budget docs/benchmarks/web-test-stability-budgets.json --output /tmp/web-test-stability-report.json",
     "ci": "pnpm lint && pnpm typecheck && pnpm test"
   },
   "devDependencies": {

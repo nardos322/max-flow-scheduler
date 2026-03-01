@@ -1,0 +1,20 @@
+{
+  "benchmark": "web-test-stability",
+  "generatedAt": "2026-03-01T16:42:20Z",
+  "command": "pnpm --filter @scheduler/web test",
+  "metrics": {
+    "runs": 5,
+    "minMs": 2630,
+    "maxMs": 6408,
+    "avgMs": 3408.600,
+    "p50Ms": 2676,
+    "p95Ms": 6408
+  },
+  "runs": [
+    {"iteration": 1, "elapsedMs": 6408, "status": 0},
+    {"iteration": 2, "elapsedMs": 2630, "status": 0},
+    {"iteration": 3, "elapsedMs": 2694, "status": 0},
+    {"iteration": 4, "elapsedMs": 2676, "status": 0},
+    {"iteration": 5, "elapsedMs": 2635, "status": 0}
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "benchmark": "web-test-stability",
+  "minRuns": 3,
+  "maxFailedRuns": 0,
+  "maxP95Ms": 30000,
+  "warnAvgMs": 20000
+}
