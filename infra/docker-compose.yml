@@ -7,17 +7,40 @@ services:
     environment:
       DATABASE_URL: file:./.data/dev.db
       JWT_SECRET: change-me-in-real-env
+      JWT_ISSUER: scheduler-auth-dev
+      JWT_AUDIENCE: scheduler-api
+      AUTH_DEV_TOKEN_ENABLED: "true"
       PORT: 3000
     ports:
       - '3000:3000'
     volumes:
       - api-data:/workspace/apps/api/.data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:3000/health').then((response)=>process.exit(response.ok?0:1)).catch(()=>process.exit(1))\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
 
   engine:
     build:
       context: ..
       dockerfile: services/engine-cpp/Dockerfile
     entrypoint: ["/bin/sh", "-lc", "sleep infinity"]
+
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_API_URL: http://localhost:3000
+    ports:
+      - '5173:5173'
+    depends_on:
+      - api
 
 volumes:
   api-data:

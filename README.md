@@ -39,6 +39,12 @@ Monorepo para planificacion de medicos en vacaciones usando un solver de max-flo
 - `pnpm db:setup:local`
 - `pnpm seed:demo`
 - `pnpm reset:local`
+- `pnpm docker:build`
+- `pnpm docker:up`
+- `pnpm docker:down`
+- `pnpm docker:logs`
+- `pnpm docker:ps`
+- `pnpm docker:reset`
 - `pnpm build`
 - `pnpm lint`
 - `pnpm typecheck`
@@ -126,13 +132,23 @@ Monorepo para planificacion de medicos en vacaciones usando un solver de max-flo
   - `/health`, `/openapi.json` y `/docs` son publicos.
   - En `dev`, tambien puede estar publico `POST /auth/dev/token` si `AUTH_DEV_TOKEN_ENABLED=true`.
 
-## Docker (API + Engine)
+## Docker (API + Engine + Web)
 - API Dockerfile: `apps/api/Dockerfile`
 - Engine Dockerfile: `services/engine-cpp/Dockerfile`
+- Web Dockerfile: `apps/web/Dockerfile`
 - Compose local: `infra/docker-compose.yml`
 - Comandos:
-  - `docker compose -f infra/docker-compose.yml build`
-  - `docker compose -f infra/docker-compose.yml up -d api`
+  - `pnpm docker:build`
+  - `pnpm docker:up`
+  - `pnpm docker:logs`
+  - `pnpm docker:down`
+  - `pnpm docker:reset`
+- URLs por defecto:
+  - Web: `http://localhost:5173`
+  - API: `http://localhost:3000`
+  - Swagger: `http://localhost:3000/docs`
+- Nota:
+  - `pnpm docker:reset` elimina volúmenes (`api-data`) para dejar estado limpio.
 
 ## Nota MVP
 - Integracion API -> engine via CLI (`stdin/stdout`).

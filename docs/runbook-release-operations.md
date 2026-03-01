@@ -26,12 +26,13 @@ pnpm bench:engine-cpp:check
 
 ## 2. Build and run locally with Docker
 ```bash
-docker compose -f infra/docker-compose.yml build
-docker compose -f infra/docker-compose.yml up -d api
-docker compose -f infra/docker-compose.yml logs -f api
+pnpm docker:build
+pnpm docker:up
+pnpm docker:logs
 ```
 
-API default URL:
+Default URLs:
+- `http://localhost:5173` (web)
 - `http://localhost:3000`
 
 ## 3. Publish a release
