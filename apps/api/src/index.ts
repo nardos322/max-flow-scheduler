@@ -1,9 +1,11 @@
 import 'dotenv/config';
 import { createApp } from './app.js';
+import { resolveAuthRuntimeConfig } from './config/auth-config.js';
 
+const authRuntime = resolveAuthRuntimeConfig();
 const app = createApp();
 const port = Number(process.env.PORT ?? 3000);
 
 app.listen(port, () => {
-  console.log(`API listening on port ${port}`);
+  console.log(`API listening on port ${port} (auth=${authRuntime.mode})`);
 });

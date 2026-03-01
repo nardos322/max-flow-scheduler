@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import type { UserRole } from '@scheduler/domain';
 import { HttpError } from '../../errors/http.error.js';
+import { resolveAuthRuntimeConfig } from '../../config/auth-config.js';
 
 export type ActorLocals = {
   actor?: {
@@ -39,22 +40,6 @@ function getJwtJwksUrl(): string | null {
   return jwksUrl;
 }
 
-function getJwtIssuer(): string {
-  const issuer = process.env.JWT_ISSUER?.trim();
-  if (!issuer) {
-    throw new HttpError(500, { error: 'JWT_ISSUER is not configured' });
-  }
-  return issuer;
-}
-
-function getJwtAudience(): string {
-  const audience = process.env.JWT_AUDIENCE?.trim();
-  if (!audience) {
-    throw new HttpError(500, { error: 'JWT_AUDIENCE is not configured' });
-  }
-  return audience;
-}
-
 const jwksByUrl = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
 
 function getRemoteJwks(url: URL): ReturnType<typeof createRemoteJWKSet> {
@@ -70,14 +55,14 @@ function getRemoteJwks(url: URL): ReturnType<typeof createRemoteJWKSet> {
 }
 
 async function verifyJwtToken(token: string): Promise<JwtClaims> {
-  const issuer = getJwtIssuer();
-  const audience = getJwtAudience();
+  const runtime = resolveAuthRuntimeConfig();
+  const { issuer, audience } = runtime;
   const jwksUrl = getJwtJwksUrl();
 
-  if (jwksUrl) {
+  if (runtime.mode === 'jwks') {
     let parsedUrl: URL;
     try {
-      parsedUrl = new URL(jwksUrl);
+      parsedUrl = new URL(jwksUrl as string);
     } catch {
       throw new HttpError(500, { error: 'JWT_JWKS_URL is not a valid URL' });
     }
@@ -90,8 +75,8 @@ async function verifyJwtToken(token: string): Promise<JwtClaims> {
     return payload as JwtClaims;
   }
 
-  const publicKey = getJwtPublicKey();
-  if (publicKey) {
+  if (runtime.mode === 'public-key') {
+    const publicKey = getJwtPublicKey() as string;
     const payload = jwt.verify(token, publicKey, {
       algorithms: ['RS256'],
       audience,
@@ -103,8 +88,8 @@ async function verifyJwtToken(token: string): Promise<JwtClaims> {
     return payload as JwtClaims;
   }
 
-  const secret = process.env.JWT_SECRET?.trim();
-  if (secret) {
+  if (runtime.mode === 'shared-secret') {
+    const secret = process.env.JWT_SECRET?.trim() as string;
     const payload = jwt.verify(token, secret, {
       algorithms: ['HS256'],
       audience,
