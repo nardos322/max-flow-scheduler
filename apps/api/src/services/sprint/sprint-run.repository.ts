@@ -1,9 +1,6 @@
 import type { SprintRun } from '@scheduler/domain';
 import { getPrismaClient } from '../../lib/prisma.js';
 
-const sprintRunStore = new Map<string, SprintRun[]>();
-const repositoryDriver = process.env.SPRINT_REPOSITORY_DRIVER?.trim().toLowerCase() ?? 'memory';
-
 function mapDbRunStatus(status: SprintRun['status']): 'succeeded' | 'failed' {
   return status;
 }
@@ -84,29 +81,13 @@ async function clearSprintRunStorePrisma(): Promise<void> {
 }
 
 export async function appendSprintRun(run: SprintRun): Promise<SprintRun> {
-  if (repositoryDriver === 'prisma') {
-    return appendSprintRunPrisma(run);
-  }
-
-  const current = sprintRunStore.get(run.sprintId) ?? [];
-  current.push(run);
-  sprintRunStore.set(run.sprintId, current);
-  return run;
+  return appendSprintRunPrisma(run);
 }
 
 export async function listSprintRuns(sprintId: string): Promise<SprintRun[]> {
-  if (repositoryDriver === 'prisma') {
-    return listSprintRunsPrisma(sprintId);
-  }
-
-  return [...(sprintRunStore.get(sprintId) ?? [])].sort((a, b) => a.executedAt.localeCompare(b.executedAt));
+  return listSprintRunsPrisma(sprintId);
 }
 
 export async function clearSprintRunStore(): Promise<void> {
-  if (repositoryDriver === 'prisma') {
-    await clearSprintRunStorePrisma();
-    return;
-  }
-
-  sprintRunStore.clear();
+  await clearSprintRunStorePrisma();
 }

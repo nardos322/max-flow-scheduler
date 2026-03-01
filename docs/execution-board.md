@@ -57,7 +57,7 @@ _Ultima actualizacion manual: 2026-03-01 (alineado con evidencia en codigo/repos
 - T-104.3 Migrar repositorios de sprint/runs a Prisma sin romper contratos API. Owner: `integration-orchestrator`. Estado: `done`
 - T-104.4 Adaptar tests backend a DB SQLite deterministica. Owner: `qa-reliability`. Estado: `done`
 - Done cuando:
-  - API de sprints ya no depende de store `in-memory/json` como mecanismo principal
+  - API de sprints ya no depende de store `in-memory/json`
   - Migraciones versionadas y ejecutables en CI/local
   - Suite backend verde con persistencia real
 

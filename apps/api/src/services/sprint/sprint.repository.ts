@@ -1,53 +1,5 @@
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { sprintSchema, type Sprint } from '@scheduler/domain';
+import { type Sprint } from '@scheduler/domain';
 import { getPrismaClient } from '../../lib/prisma.js';
-
-const moduleDir = path.dirname(fileURLToPath(import.meta.url));
-const defaultStoreFile = path.resolve(moduleDir, '../../../../.data/sprints.json');
-const repositoryDriver = process.env.SPRINT_REPOSITORY_DRIVER?.trim().toLowerCase() ?? 'memory';
-
-function isPersistenceEnabled(): boolean {
-  const configured = process.env.SPRINT_PERSISTENCE?.trim().toLowerCase();
-  if (configured === 'on') {
-    return true;
-  }
-  if (configured === 'off') {
-    return false;
-  }
-
-  return !('VITEST' in process.env);
-}
-
-const persistenceEnabled = isPersistenceEnabled();
-const sprintStoreFile = path.resolve(process.env.SPRINT_STORE_FILE?.trim() || defaultStoreFile);
-
-function loadPersistedSprints(): Sprint[] {
-  if (!persistenceEnabled) {
-    return [];
-  }
-
-  try {
-    const serialized = readFileSync(sprintStoreFile, 'utf8');
-    const parsed = JSON.parse(serialized) as unknown;
-    const sprintArraySchema = sprintSchema.array();
-    return sprintArraySchema.parse(parsed);
-  } catch {
-    return [];
-  }
-}
-
-function persistSprints(store: Map<string, Sprint>): void {
-  if (!persistenceEnabled) {
-    return;
-  }
-
-  mkdirSync(path.dirname(sprintStoreFile), { recursive: true });
-  writeFileSync(sprintStoreFile, JSON.stringify([...store.values()], null, 2), 'utf8');
-}
-
-const sprintStore = new Map<string, Sprint>(loadPersistedSprints().map((sprint) => [sprint.id, sprint]));
 
 function toDbSprintStatus(status: Sprint['status']): 'draft' | 'ready_to_solve' | 'solved' {
   if (status === 'ready-to-solve') {
@@ -322,39 +274,17 @@ async function clearSprintStorePrisma(): Promise<void> {
 }
 
 export async function saveSprint(sprint: Sprint): Promise<Sprint> {
-  if (repositoryDriver === 'prisma') {
-    return saveSprintPrisma(sprint);
-  }
-
-  sprintStore.set(sprint.id, sprint);
-  persistSprints(sprintStore);
-  return sprint;
+  return saveSprintPrisma(sprint);
 }
 
 export async function getSprintById(id: string): Promise<Sprint | null> {
-  if (repositoryDriver === 'prisma') {
-    return getSprintByIdPrisma(id);
-  }
-
-  return sprintStore.get(id) ?? null;
+  return getSprintByIdPrisma(id);
 }
 
 export async function listSprints(): Promise<Sprint[]> {
-  if (repositoryDriver === 'prisma') {
-    return listSprintsPrisma();
-  }
-
-  return [...sprintStore.values()].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  return listSprintsPrisma();
 }
 
 export async function clearSprintStore(): Promise<void> {
-  if (repositoryDriver === 'prisma') {
-    await clearSprintStorePrisma();
-    return;
-  }
-
-  sprintStore.clear();
-  if (persistenceEnabled) {
-    rmSync(sprintStoreFile, { force: true });
-  }
+  await clearSprintStorePrisma();
 }

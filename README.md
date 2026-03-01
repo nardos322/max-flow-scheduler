@@ -36,8 +36,9 @@ Monorepo para planificacion de medicos en vacaciones usando un solver de max-flo
   - `pnpm --filter @scheduler/api run test:prisma:sprint`
 - Ejemplo local de URL SQLite:
   - `DATABASE_URL="file:./dev.db"`
+  - Alternativa: copiar `apps/api/.env.example` a `apps/api/.env`
 
 ## Nota MVP
 - Integracion API -> engine via CLI (`stdin/stdout`).
 - Autenticacion JWT basica en endpoints de disponibilidad.
-- Persistencia en transicion a Prisma + SQLite.
+- Persistencia backend de sprints/corridas sobre Prisma + SQLite.
