@@ -17,46 +17,99 @@ describe('App', () => {
     vi.restoreAllMocks();
   });
 
-  it('renders scenario editor', () => {
+  it('renders sprint run console', () => {
     renderApp();
 
-    expect(screen.getByRole('heading', { name: 'Scenario Editor' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Resolver escenario' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Sprint Run Console' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ejecutar corrida' })).toBeInTheDocument();
   });
 
-  it('blocks submit when payload is invalid', async () => {
+  it('blocks run until sprint id is provided', () => {
     renderApp();
 
-    const doctorIdInput = screen.getByLabelText('Doctor id 1');
-    fireEvent.change(doctorIdInput, { target: { value: '' } });
-
-    expect(screen.getByRole('button', { name: 'Resolver escenario' })).toBeDisabled();
-    expect(screen.getByRole('alert')).toHaveTextContent('doctors.0.id');
+    expect(screen.getByRole('button', { name: 'Ejecutar corrida' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Cargar historial' })).toBeDisabled();
   });
 
-  it('calls api and renders solver summary for valid payload', async () => {
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        contractVersion: '1.0',
-        isFeasible: true,
-        assignedCount: 2,
-        uncoveredDays: [],
-        assignments: [
-          { doctorId: 'd1', dayId: 'day-1', periodId: 'p1' },
-          { doctorId: 'd1', dayId: 'day-2', periodId: 'p1' },
-        ],
-      }),
-    } as Response);
+  it('runs sprint solve and renders assignment rows by day', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input);
 
-    renderApp();
+      if (url.endsWith('/sprints/sprint-1/runs') && init?.method === 'POST') {
+        return {
+          ok: true,
+          json: async () => ({
+            run: {
+              id: 'run-1',
+              sprintId: 'sprint-1',
+              executedAt: '2026-03-01T10:00:00.000Z',
+              status: 'succeeded',
+              inputSnapshot: {
+                contractVersion: '1.0',
+                doctors: [{ id: 'd1', maxTotalDays: 2 }],
+                periods: [{ id: 'p1', dayIds: ['2026-03-02'] }],
+                demands: [{ dayId: '2026-03-02', requiredDoctors: 1 }],
+                availability: [{ doctorId: 'd1', periodId: 'p1', dayId: '2026-03-02' }],
+              },
+              outputSnapshot: {
+                contractVersion: '1.0',
+                isFeasible: true,
+                assignedCount: 1,
+                uncoveredDays: [],
+                assignments: [{ doctorId: 'd1', periodId: 'p1', dayId: '2026-03-02' }],
+              },
+            },
+            result: {
+              contractVersion: '1.0',
+              isFeasible: true,
+              assignedCount: 1,
+              uncoveredDays: [],
+              assignments: [{ doctorId: 'd1', periodId: 'p1', dayId: '2026-03-02' }],
+            },
+          }),
+        } as Response;
+      }
 
-    fireEvent.click(screen.getByRole('button', { name: 'Resolver escenario' }));
+      if (url.endsWith('/sprints/sprint-1/runs') && init?.method === 'GET') {
+        return {
+          ok: true,
+          json: async () => ({
+            items: [
+              {
+                id: 'run-1',
+                sprintId: 'sprint-1',
+                executedAt: '2026-03-01T10:00:00.000Z',
+                status: 'succeeded',
+                inputSnapshot: {
+                  contractVersion: '1.0',
+                  doctors: [{ id: 'd1', maxTotalDays: 2 }],
+                  periods: [{ id: 'p1', dayIds: ['2026-03-02'] }],
+                  demands: [{ dayId: '2026-03-02', requiredDoctors: 1 }],
+                  availability: [{ doctorId: 'd1', periodId: 'p1', dayId: '2026-03-02' }],
+                },
+              },
+            ],
+          }),
+        } as Response;
+      }
 
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledTimes(1);
+      throw new Error(`Unexpected fetch call: ${url}`);
     });
 
-    expect(screen.getByText('Assigned count: 2')).toBeInTheDocument();
-  });
+    renderApp();
+
+    fireEvent.change(screen.getByLabelText('Sprint ID'), { target: { value: 'sprint-1' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Ejecutar corrida' }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/sprints/sprint-1/runs'),
+        expect.objectContaining({ method: 'POST' }),
+      );
+    });
+
+    expect(screen.getByText('Resultado de la ultima corrida (succeeded)')).toBeInTheDocument();
+    expect(screen.getByText('2026-03-02')).toBeInTheDocument();
+    expect(screen.getByText('d1')).toBeInTheDocument();
+  }, 10000);
 });

@@ -1,415 +1,263 @@
 import { useMemo, useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { CheckCircle2, Plus, TriangleAlert, X } from 'lucide-react';
-import { solveRequestSchema, type SolveRequest, type SolveResponse } from '@scheduler/domain';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { CheckCircle2, Play, RefreshCcw, Shield, TriangleAlert } from 'lucide-react';
+import { solveResponseSchema, sprintRunSchema } from '@scheduler/domain';
+import { z } from 'zod';
 import { Button } from './components/ui/button.js';
 import { Card } from './components/ui/card.js';
-
-type EditableDoctor = {
-  id: string;
-  maxTotalDays: number;
-};
-
-type EditablePeriod = {
-  id: string;
-  dayIdsText: string;
-};
-
-type EditableDemand = {
-  dayId: string;
-  requiredDoctors: number;
-};
-
-type EditableAvailability = {
-  doctorId: string;
-  periodId: string;
-  dayId: string;
-};
-
-type ValidationIssue = {
-  path: string;
-  message: string;
-};
 
 type ApiError = {
   error?: string;
   code?: string;
-  details?: string;
   requestId?: string;
 };
 
 const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
-function toSolveRequest(
-  doctors: EditableDoctor[],
-  periods: EditablePeriod[],
-  demands: EditableDemand[],
-  availability: EditableAvailability[],
-): SolveRequest {
-  return {
-    contractVersion: '1.0',
-    doctors: doctors.map((doctor) => ({
-      id: doctor.id,
-      maxTotalDays: doctor.maxTotalDays,
-    })),
-    periods: periods.map((period) => ({
-      id: period.id,
-      dayIds: period.dayIdsText
-        .split(',')
-        .map((day) => day.trim())
-        .filter((day) => day.length > 0),
-    })),
-    demands: demands.map((demand) => ({
-      dayId: demand.dayId,
-      requiredDoctors: demand.requiredDoctors,
-    })),
-    availability: availability.map((item) => ({
-      doctorId: item.doctorId,
-      periodId: item.periodId,
-      dayId: item.dayId,
-    })),
+const runSolveResponseSchema = z.object({
+  run: sprintRunSchema,
+  result: solveResponseSchema,
+});
+
+const sprintRunListResponseSchema = z.object({
+  items: z.array(sprintRunSchema),
+});
+
+type RunSolveResponse = z.infer<typeof runSolveResponseSchema>;
+type SprintRunListResponse = z.infer<typeof sprintRunListResponseSchema>;
+
+function buildHeaders(token: string): HeadersInit {
+  const headers: Record<string, string> = {
+    'content-type': 'application/json',
   };
+
+  const trimmedToken = token.trim();
+  if (trimmedToken.length > 0) {
+    headers.authorization = `Bearer ${trimmedToken}`;
+  }
+
+  return headers;
 }
 
-async function solveScenario(payload: SolveRequest): Promise<SolveResponse> {
-  const response = await fetch(`${apiBaseUrl}/schedule/solve`, {
+async function parseApiError(response: Response): Promise<string> {
+  const payload = (await response.json().catch(() => ({}))) as ApiError;
+  return payload.error ?? `HTTP ${response.status}`;
+}
+
+async function runSprintSolve(sprintId: string, token: string): Promise<RunSolveResponse> {
+  const response = await fetch(`${apiBaseUrl}/sprints/${encodeURIComponent(sprintId)}/runs`, {
     method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify(payload),
+    headers: buildHeaders(token),
+    body: JSON.stringify({}),
   });
 
   if (!response.ok) {
-    const errorPayload = (await response.json().catch(() => ({}))) as ApiError;
-    const errorMessage = errorPayload.error ?? `HTTP ${response.status}`;
-    throw new Error(errorMessage);
+    throw new Error(await parseApiError(response));
   }
 
-  return (await response.json()) as SolveResponse;
+  const json = (await response.json()) as unknown;
+  return runSolveResponseSchema.parse(json);
+}
+
+async function listSprintRuns(sprintId: string, token: string): Promise<SprintRunListResponse> {
+  const response = await fetch(`${apiBaseUrl}/sprints/${encodeURIComponent(sprintId)}/runs`, {
+    method: 'GET',
+    headers: buildHeaders(token),
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseApiError(response));
+  }
+
+  const json = (await response.json()) as unknown;
+  return sprintRunListResponseSchema.parse(json);
+}
+
+function formatIso(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return iso;
+  }
+  return date.toLocaleString();
 }
 
 export function App() {
-  const [doctors, setDoctors] = useState<EditableDoctor[]>([{ id: 'd1', maxTotalDays: 2 }]);
-  const [periods, setPeriods] = useState<EditablePeriod[]>([{ id: 'p1', dayIdsText: 'day-1,day-2' }]);
-  const [demands, setDemands] = useState<EditableDemand[]>([
-    { dayId: 'day-1', requiredDoctors: 1 },
-    { dayId: 'day-2', requiredDoctors: 1 },
-  ]);
-  const [availability, setAvailability] = useState<EditableAvailability[]>([
-    { doctorId: 'd1', periodId: 'p1', dayId: 'day-1' },
-    { doctorId: 'd1', periodId: 'p1', dayId: 'day-2' },
-  ]);
-  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
+  const [sprintId, setSprintId] = useState('');
+  const [token, setToken] = useState('');
 
-  const draftPayload = useMemo(
-    () => toSolveRequest(doctors, periods, demands, availability),
-    [doctors, periods, demands, availability],
-  );
-
-  const validation = useMemo(() => solveRequestSchema.safeParse(draftPayload), [draftPayload]);
-
-  const issues: ValidationIssue[] = validation.success
-    ? []
-    : validation.error.issues.map((issue) => ({
-        path: issue.path.join('.'),
-        message: issue.message,
-      }));
-
-  const solveMutation = useMutation({
-    mutationFn: solveScenario,
+  const historyQuery = useQuery({
+    queryKey: ['sprint-runs', sprintId, token],
+    queryFn: () => listSprintRuns(sprintId, token),
+    enabled: false,
+    retry: false,
   });
 
-  const onSolve = () => {
-    setAttemptedSubmit(true);
-    if (!validation.success) {
-      return;
+  const solveMutation = useMutation({
+    mutationFn: () => runSprintSolve(sprintId, token),
+    onSuccess: async () => {
+      await historyQuery.refetch();
+    },
+  });
+
+  const latestResult = solveMutation.data?.result;
+
+  const assignmentsByDay = useMemo(() => {
+    if (!latestResult) {
+      return [] as Array<{ dayId: string; assignments: string[] }>;
     }
 
-    solveMutation.mutate(validation.data);
-  };
+    const dayMap = new Map<string, string[]>();
+    for (const assignment of latestResult.assignments) {
+      const existing = dayMap.get(assignment.dayId) ?? [];
+      existing.push(assignment.doctorId);
+      dayMap.set(assignment.dayId, existing);
+    }
+
+    return Array.from(dayMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([dayId, assignments]) => ({ dayId, assignments }));
+  }, [latestResult]);
+
+  const canRun = sprintId.trim().length > 0;
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#e8fff3_0%,#f8fffb_45%,#f9fafb_100%)] px-4 py-8 text-slate-900 md:px-8">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#fff4dd_0%,#fffdfa_38%,#f8fafc_100%)] px-4 py-8 text-slate-900 md:px-8">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
-        <Card className="border-brand-100 bg-gradient-to-r from-brand-50 to-white">
-          <h1 className="text-3xl font-black tracking-tight">Scenario Editor</h1>
+        <Card className="border-amber-200 bg-gradient-to-r from-amber-50 to-white">
+          <h1 className="text-3xl font-black tracking-tight">Sprint Run Console</h1>
           <p className="mt-2 text-sm text-slate-600">
-            Carga medicos, periodos, demanda diaria y disponibilidad. El payload se valida con los schemas
-            compartidos antes de ejecutar el solver.
+            Ejecuta corridas del solver por sprint y visualiza asignaciones por dia usando la API operativa.
           </p>
         </Card>
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-700">Medicos</h2>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setDoctors((previous) => [...previous, { id: `d${previous.length + 1}`, maxTotalDays: 1 }])}
-              >
-                <Plus className="mr-1 h-4 w-4" /> Agregar
-              </Button>
-            </div>
-            {doctors.map((doctor, index) => (
-              <div key={`${doctor.id}-${index}`} className="grid grid-cols-[1fr_160px_auto] gap-2">
-                <input
-                  aria-label={`Doctor id ${index + 1}`}
-                  className="rounded-md border border-slate-300 px-3 py-2 text-sm"
-                  value={doctor.id}
-                  onChange={(event) =>
-                    setDoctors((previous) =>
-                      previous.map((item, itemIndex) =>
-                        itemIndex === index ? { ...item, id: event.target.value } : item,
-                      ),
-                    )
-                  }
-                />
-                <input
-                  aria-label={`Max days ${index + 1}`}
-                  type="number"
-                  min={0}
-                  className="rounded-md border border-slate-300 px-3 py-2 text-sm"
-                  value={doctor.maxTotalDays}
-                  onChange={(event) =>
-                    setDoctors((previous) =>
-                      previous.map((item, itemIndex) =>
-                        itemIndex === index ? { ...item, maxTotalDays: Number(event.target.value) } : item,
-                      ),
-                    )
-                  }
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  aria-label={`Remove doctor ${index + 1}`}
-                  onClick={() => setDoctors((previous) => previous.filter((_, itemIndex) => itemIndex !== index))}
-                  disabled={doctors.length === 1}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-          </Card>
+        <Card className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-[1fr_2fr_auto_auto] md:items-end">
+            <label className="text-sm text-slate-700">
+              Sprint ID
+              <input
+                aria-label="Sprint ID"
+                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                placeholder="sprint-123"
+                value={sprintId}
+                onChange={(event) => setSprintId(event.target.value)}
+              />
+            </label>
 
-          <Card className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-700">Periodos</h2>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  setPeriods((previous) => [...previous, { id: `p${previous.length + 1}`, dayIdsText: 'day-1' }])
-                }
-              >
-                <Plus className="mr-1 h-4 w-4" /> Agregar
-              </Button>
-            </div>
-            {periods.map((period, index) => (
-              <div key={`${period.id}-${index}`} className="grid grid-cols-[160px_1fr_auto] gap-2">
-                <input
-                  aria-label={`Period id ${index + 1}`}
-                  className="rounded-md border border-slate-300 px-3 py-2 text-sm"
-                  value={period.id}
-                  onChange={(event) =>
-                    setPeriods((previous) =>
-                      previous.map((item, itemIndex) =>
-                        itemIndex === index ? { ...item, id: event.target.value } : item,
-                      ),
-                    )
-                  }
-                />
-                <input
-                  aria-label={`Period days ${index + 1}`}
-                  className="rounded-md border border-slate-300 px-3 py-2 text-sm"
-                  placeholder="day-1,day-2"
-                  value={period.dayIdsText}
-                  onChange={(event) =>
-                    setPeriods((previous) =>
-                      previous.map((item, itemIndex) =>
-                        itemIndex === index ? { ...item, dayIdsText: event.target.value } : item,
-                      ),
-                    )
-                  }
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  aria-label={`Remove period ${index + 1}`}
-                  onClick={() => setPeriods((previous) => previous.filter((_, itemIndex) => itemIndex !== index))}
-                  disabled={periods.length === 1}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-          </Card>
+            <label className="text-sm text-slate-700">
+              Bearer token
+              <input
+                aria-label="Bearer token"
+                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                placeholder="eyJ..."
+                value={token}
+                onChange={(event) => setToken(event.target.value)}
+              />
+            </label>
 
-          <Card className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-700">Demanda diaria</h2>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setDemands((previous) => [...previous, { dayId: `day-${previous.length + 1}`, requiredDoctors: 1 }])}
-              >
-                <Plus className="mr-1 h-4 w-4" /> Agregar
-              </Button>
-            </div>
-            {demands.map((demand, index) => (
-              <div key={`${demand.dayId}-${index}`} className="grid grid-cols-[1fr_180px_auto] gap-2">
-                <input
-                  aria-label={`Demand day ${index + 1}`}
-                  className="rounded-md border border-slate-300 px-3 py-2 text-sm"
-                  value={demand.dayId}
-                  onChange={(event) =>
-                    setDemands((previous) =>
-                      previous.map((item, itemIndex) =>
-                        itemIndex === index ? { ...item, dayId: event.target.value } : item,
-                      ),
-                    )
-                  }
-                />
-                <input
-                  aria-label={`Required doctors ${index + 1}`}
-                  type="number"
-                  min={1}
-                  className="rounded-md border border-slate-300 px-3 py-2 text-sm"
-                  value={demand.requiredDoctors}
-                  onChange={(event) =>
-                    setDemands((previous) =>
-                      previous.map((item, itemIndex) =>
-                        itemIndex === index
-                          ? { ...item, requiredDoctors: Math.max(1, Number(event.target.value)) }
-                          : item,
-                      ),
-                    )
-                  }
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  aria-label={`Remove demand ${index + 1}`}
-                  onClick={() => setDemands((previous) => previous.filter((_, itemIndex) => itemIndex !== index))}
-                  disabled={demands.length === 1}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-          </Card>
+            <Button
+              variant="outline"
+              onClick={() => historyQuery.refetch()}
+              disabled={!canRun || historyQuery.isFetching}
+              aria-label="Cargar historial"
+            >
+              <RefreshCcw className="mr-2 h-4 w-4" /> Historial
+            </Button>
 
-          <Card className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-700">Disponibilidad</h2>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  setAvailability((previous) => [...previous, { doctorId: 'd1', periodId: 'p1', dayId: 'day-1' }])
-                }
-              >
-                <Plus className="mr-1 h-4 w-4" /> Agregar
-              </Button>
-            </div>
-            {availability.map((item, index) => (
-              <div key={`${item.doctorId}-${item.periodId}-${item.dayId}-${index}`} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2">
-                <input
-                  aria-label={`Availability doctor ${index + 1}`}
-                  className="rounded-md border border-slate-300 px-3 py-2 text-sm"
-                  value={item.doctorId}
-                  onChange={(event) =>
-                    setAvailability((previous) =>
-                      previous.map((entry, entryIndex) =>
-                        entryIndex === index ? { ...entry, doctorId: event.target.value } : entry,
-                      ),
-                    )
-                  }
-                />
-                <input
-                  aria-label={`Availability period ${index + 1}`}
-                  className="rounded-md border border-slate-300 px-3 py-2 text-sm"
-                  value={item.periodId}
-                  onChange={(event) =>
-                    setAvailability((previous) =>
-                      previous.map((entry, entryIndex) =>
-                        entryIndex === index ? { ...entry, periodId: event.target.value } : entry,
-                      ),
-                    )
-                  }
-                />
-                <input
-                  aria-label={`Availability day ${index + 1}`}
-                  className="rounded-md border border-slate-300 px-3 py-2 text-sm"
-                  value={item.dayId}
-                  onChange={(event) =>
-                    setAvailability((previous) =>
-                      previous.map((entry, entryIndex) =>
-                        entryIndex === index ? { ...entry, dayId: event.target.value } : entry,
-                      ),
-                    )
-                  }
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  aria-label={`Remove availability ${index + 1}`}
-                  onClick={() =>
-                    setAvailability((previous) => previous.filter((_, entryIndex) => entryIndex !== index))
-                  }
-                  disabled={availability.length === 1}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-          </Card>
-        </div>
-
-        <Card className="space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-700">Validacion de escenario</h2>
-              <p className="text-sm text-slate-600">
-                {validation.success ? 'Payload valido para el contrato v1.' : 'Hay errores de validacion en el payload.'}
-              </p>
-            </div>
-            <Button onClick={onSolve} disabled={solveMutation.isPending || !validation.success} aria-label="Resolver escenario">
-              {solveMutation.isPending ? 'Resolviendo...' : 'Resolver escenario'}
+            <Button onClick={() => solveMutation.mutate()} disabled={!canRun || solveMutation.isPending} aria-label="Ejecutar corrida">
+              <Play className="mr-2 h-4 w-4" />
+              {solveMutation.isPending ? 'Ejecutando...' : 'Ejecutar corrida'}
             </Button>
           </div>
 
-          {!validation.success && (attemptedSubmit || issues.length > 0) ? (
-            <ul className="space-y-1 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
-              {issues.map((issue) => (
-                <li key={`${issue.path}-${issue.message}`}>
-                  <span className="font-semibold">{issue.path || 'root'}:</span> {issue.message}
-                </li>
-              ))}
-            </ul>
+          {token.trim().length === 0 ? (
+            <p className="flex items-center gap-2 text-xs text-slate-500">
+              <Shield className="h-3.5 w-3.5" />
+              Si la API requiere auth, pega un JWT valido. En dev puedes usar <code>/auth/dev/token</code>.
+            </p>
           ) : null}
 
-          {solveMutation.isError ? (
-            <div className="flex items-center gap-2 text-sm text-red-700" role="alert">
+          {(solveMutation.isError || historyQuery.isError) && (
+            <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
               <TriangleAlert className="h-4 w-4" />
-              {solveMutation.error.message}
+              {(solveMutation.error as Error | null)?.message ?? (historyQuery.error as Error | null)?.message}
             </div>
-          ) : null}
+          )}
+        </Card>
 
-          {solveMutation.data ? (
-            <div className="rounded-md border border-brand-200 bg-brand-50 p-3 text-sm">
-              <div className="flex items-center gap-2 font-semibold text-brand-700">
-                <CheckCircle2 className="h-4 w-4" />
-                Resultado del solver
-              </div>
-              <p className="mt-1 text-slate-700">Feasible: {solveMutation.data.isFeasible ? 'si' : 'no'}</p>
-              <p className="text-slate-700">Assigned count: {solveMutation.data.assignedCount}</p>
-              <p className="text-slate-700">
-                Uncovered days: {solveMutation.data.uncoveredDays.length === 0 ? 'ninguno' : solveMutation.data.uncoveredDays.join(', ')}
-              </p>
+        {solveMutation.data ? (
+          <Card className="space-y-3 border-emerald-200 bg-emerald-50/60">
+            <div className="flex items-center gap-2 font-semibold text-emerald-700">
+              <CheckCircle2 className="h-4 w-4" />
+              Resultado de la ultima corrida ({solveMutation.data.run.status})
             </div>
-          ) : null}
+            <p className="text-sm text-slate-700">Run ID: {solveMutation.data.run.id}</p>
+            <p className="text-sm text-slate-700">Ejecutada: {formatIso(solveMutation.data.run.executedAt)}</p>
+            <p className="text-sm text-slate-700">Factible: {latestResult?.isFeasible ? 'si' : 'no'}</p>
+            <p className="text-sm text-slate-700">Asignaciones: {latestResult?.assignedCount ?? 0}</p>
+            <p className="text-sm text-slate-700">
+              Dias sin cubrir:{' '}
+              {latestResult && latestResult.uncoveredDays.length > 0 ? latestResult.uncoveredDays.join(', ') : 'ninguno'}
+            </p>
+
+            <div className="overflow-x-auto rounded-md border border-slate-200 bg-white">
+              <table className="min-w-full text-left text-sm">
+                <thead className="bg-slate-100 text-xs uppercase tracking-wide text-slate-600">
+                  <tr>
+                    <th className="px-3 py-2">Dia</th>
+                    <th className="px-3 py-2">Medicos asignados</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {assignmentsByDay.length === 0 ? (
+                    <tr>
+                      <td className="px-3 py-3 text-slate-500" colSpan={2}>
+                        Sin asignaciones en la corrida.
+                      </td>
+                    </tr>
+                  ) : (
+                    assignmentsByDay.map((row) => (
+                      <tr key={row.dayId} className="border-t border-slate-100">
+                        <td className="px-3 py-2 font-medium text-slate-800">{row.dayId}</td>
+                        <td className="px-3 py-2 text-slate-700">{row.assignments.join(', ')}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        ) : null}
+
+        <Card>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-700">Historial de corridas</h2>
+          <div className="mt-3 overflow-x-auto rounded-md border border-slate-200">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-slate-100 text-xs uppercase tracking-wide text-slate-600">
+                <tr>
+                  <th className="px-3 py-2">Run ID</th>
+                  <th className="px-3 py-2">Estado</th>
+                  <th className="px-3 py-2">Ejecutada</th>
+                </tr>
+              </thead>
+              <tbody>
+                {!historyQuery.data || historyQuery.data.items.length === 0 ? (
+                  <tr>
+                    <td className="px-3 py-3 text-slate-500" colSpan={3}>
+                      Sin corridas cargadas.
+                    </td>
+                  </tr>
+                ) : (
+                  historyQuery.data.items.map((run) => (
+                    <tr key={run.id} className="border-t border-slate-100">
+                      <td className="px-3 py-2 font-medium text-slate-800">{run.id}</td>
+                      <td className="px-3 py-2 text-slate-700">{run.status}</td>
+                      <td className="px-3 py-2 text-slate-700">{formatIso(run.executedAt)}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </Card>
       </div>
     </main>
