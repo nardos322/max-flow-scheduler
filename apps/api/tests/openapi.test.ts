@@ -10,6 +10,11 @@ describe('openApiDocument', () => {
     expect(openApiDocument.paths['/sprints/{sprintId}/runs']).toBeDefined();
   });
 
+  it('marks direct solve as transitional for MVP', () => {
+    expect(openApiDocument.paths['/schedule/solve'].post.deprecated).toBe(true);
+    expect(openApiDocument.paths['/schedule/solve'].post.description).toContain('sprint-first');
+  });
+
   it('uses detailed schemas for key request bodies', () => {
     expect(
       openApiDocument.paths['/doctors'].post.requestBody.content['application/json'].schema.$ref,

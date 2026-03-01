@@ -639,7 +639,10 @@ export const openApiDocument = {
     '/schedule/solve': {
       post: {
         tags: ['schedule'],
-        summary: 'Resolver escenario puntual',
+        summary: 'Resolver escenario puntual (endpoint tecnico transicional)',
+        description:
+          'Para MVP, el flujo recomendado es sprint-first: marcar ready-to-solve y ejecutar POST /sprints/{sprintId}/runs. Este endpoint se mantiene por compatibilidad tecnica.',
+        deprecated: true,
         security: [{ BearerAuth: [] }],
         requestBody: {
           required: true,

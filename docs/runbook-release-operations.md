@@ -60,7 +60,12 @@ Post-rollback checks:
 ```bash
 curl -sS http://localhost:3000/health
 ```
-3. Execute one smoke solve request to confirm end-to-end behavior.
+3. Execute one sprint-first smoke flow to confirm end-to-end behavior:
+   - crear sprint,
+   - cargar disponibilidad,
+   - marcar `ready-to-solve`,
+   - ejecutar `POST /sprints/{sprintId}/runs`,
+   - listar historial `GET /sprints/{sprintId}/runs`.
 
 ## 5. Incident notes
 After rollback, register:

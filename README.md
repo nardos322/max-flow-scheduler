@@ -23,6 +23,14 @@ Monorepo para planificacion de medicos en vacaciones usando un solver de max-flo
 - Participantes del sprint editables en `draft` (`POST /sprints/:id/doctors`, `DELETE /sprints/:id/doctors/:doctorId`).
 - Disponibilidad se registra por sprint/doctor/dia, y el planner puede override.
 
+## Flujo oficial MVP (sprint-first)
+- 1) Crear/configurar sprint: `POST /sprints`, `PATCH /sprints/:id/global-config`, `POST /sprints/:id/doctors`.
+- 2) Cargar disponibilidad: `PUT /sprints/:id/doctors/:doctorId/availability` (medico) y/o `PUT /sprints/:id/availability/override` (planner).
+- 3) Marcar listo para resolver: `PATCH /sprints/:id/status` con `ready-to-solve`.
+- 4) Ejecutar corrida: `POST /sprints/:id/runs`.
+- 5) Consultar historial: `GET /sprints/:id/runs`.
+- `POST /schedule/solve` queda como endpoint tecnico transicional para compatibilidad.
+
 ## Comandos raiz
 - `pnpm dev`
 - `pnpm build`

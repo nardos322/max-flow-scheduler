@@ -1,7 +1,8 @@
 # US-201.3 Multi-Module Compatibility Report (2026-03-01)
 
 ## Boundary Map
-- Web -> API: `POST /schedule/solve` payload validated with `solveRequestSchema` in API.
+- Web -> API (MVP oficial): flujo sprint-first (`/sprints`, disponibilidad, `PATCH /sprints/{id}/status`, `POST /sprints/{id}/runs`).
+- API endpoint tecnico transicional: `POST /schedule/solve` validado con `solveRequestSchema`.
 - API -> Engine client boundary: solver output validated against `solveResponseSchema` before API response/persistence.
 - Engine client -> C++ binary: stdout JSON decoded and validated against shared `solveResponseSchema`.
 - Shared package -> consumers: `@scheduler/domain` remains single source for request/response and sprint schemas.
