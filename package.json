@@ -5,6 +5,12 @@
   "packageManager": "pnpm@10.6.0",
   "scripts": {
     "dev": "pnpm -r --parallel run dev --if-present",
+    "dev:api": "pnpm --filter @scheduler/api run dev",
+    "dev:web": "pnpm --filter @scheduler/web run dev",
+    "setup:local": "bash scripts/setup-local.sh",
+    "db:setup:local": "pnpm --filter @scheduler/api run db:setup:local",
+    "seed:demo": "pnpm --filter @scheduler/api run db:seed:demo",
+    "reset:local": "bash scripts/reset-local.sh",
     "build": "pnpm -r run build",
     "lint": "pnpm -r run lint",
     "test": "pnpm -r run test && pnpm test:engine-cpp",

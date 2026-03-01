@@ -16,7 +16,10 @@
     "db:generate": "prisma generate --schema prisma/schema.prisma",
     "db:migrate": "prisma migrate dev --schema prisma/schema.prisma",
     "db:migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
-    "db:studio": "prisma studio --schema prisma/schema.prisma"
+    "db:studio": "prisma studio --schema prisma/schema.prisma",
+    "db:setup:local": "DATABASE_URL=file:./dev.db prisma migrate deploy --schema prisma/schema.prisma && DATABASE_URL=file:./dev.db prisma generate --schema prisma/schema.prisma",
+    "db:seed:demo": "DATABASE_URL=file:./dev.db node scripts/seed-demo.mjs",
+    "db:reset:local": "rm -f dev.db dev.db-journal && pnpm run db:setup:local"
   },
   "dependencies": {
     "@libsql/client": "^0.17.0",

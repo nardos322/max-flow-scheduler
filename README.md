@@ -33,6 +33,12 @@ Monorepo para planificacion de medicos en vacaciones usando un solver de max-flo
 
 ## Comandos raiz
 - `pnpm dev`
+- `pnpm dev:api`
+- `pnpm dev:web`
+- `pnpm setup:local`
+- `pnpm db:setup:local`
+- `pnpm seed:demo`
+- `pnpm reset:local`
 - `pnpm build`
 - `pnpm lint`
 - `pnpm typecheck`
@@ -40,6 +46,19 @@ Monorepo para planificacion de medicos en vacaciones usando un solver de max-flo
 - `pnpm test:engine-cpp`
 - `pnpm test:web:stability`
 - `pnpm bench:web-tests`
+
+## Arranque local rapido (clone & run)
+1. Instalar dependencias y bootstrap local:
+   - `pnpm setup:local`
+   - Este comando:
+     - instala dependencias,
+     - crea `apps/api/.env` desde `apps/api/.env.development.example` si no existe,
+     - ejecuta migraciones Prisma en `apps/api/dev.db`,
+     - carga seed demo (doctores, periodo, sprint listo y ciclo demo).
+2. Levantar API + web:
+   - `pnpm dev`
+3. Resetear estado local cuando necesites empezar de cero:
+   - `pnpm reset:local`
 
 ## Bootstrap de base de datos (API)
 - Prisma schema: `apps/api/prisma/schema.prisma`
@@ -49,6 +68,9 @@ Monorepo para planificacion de medicos en vacaciones usando un solver de max-flo
   - `pnpm --filter @scheduler/api run db:generate`
   - `pnpm --filter @scheduler/api run db:migrate -- --name init`
   - `pnpm --filter @scheduler/api run db:migrate:deploy`
+  - `pnpm --filter @scheduler/api run db:setup:local`
+  - `pnpm --filter @scheduler/api run db:seed:demo`
+  - `pnpm --filter @scheduler/api run db:reset:local`
   - `pnpm --filter @scheduler/api run db:studio`
   - `pnpm --filter @scheduler/api run test:prisma:sprint`
 - Ejemplo local de URL SQLite:
