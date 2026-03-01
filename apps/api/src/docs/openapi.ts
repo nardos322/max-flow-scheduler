@@ -65,6 +65,8 @@ export const openApiDocument = {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
+        description:
+          "OIDC JWT emitted by external IdP. Required claims: 'sub' and role claim resolvable to doctor/planner (defaults: role, roles, realm_access.roles).",
       },
     },
     responses: errorResponses,
@@ -456,7 +458,8 @@ export const openApiDocument = {
       post: {
         tags: ['auth'],
         summary: 'Emitir JWT para desarrollo',
-        description: 'Disponible solo cuando AUTH_DEV_TOKEN_ENABLED=true y JWT_SECRET configurado.',
+        description:
+          'Disponible solo en entornos no-productivos cuando AUTH_DEV_TOKEN_ENABLED=true y JWT_SECRET configurado.',
         requestBody: {
           required: true,
           content: jsonContent('DevTokenRequest'),

@@ -484,7 +484,7 @@ export function App() {
           {token.trim().length === 0 ? (
             <p className="flex items-center gap-2 text-xs text-slate-500">
               <Shield className="h-3.5 w-3.5" />
-              Si la API requiere auth, pega un JWT valido. En dev puedes usar <code>/auth/dev/token</code>.
+              Pega un JWT valido emitido por tu IdP. Solo en desarrollo local puedes usar <code>/auth/dev/token</code>.
             </p>
           ) : null}
 

@@ -12,6 +12,8 @@ export type ActorLocals = {
   };
 };
 
+const defaultRoleClaimPaths = ['role', 'roles', 'realm_access.roles'] as const;
+
 function parseRole(raw: unknown): UserRole | null {
   if (raw === 'doctor' || raw === 'planner') {
     return raw;
@@ -22,6 +24,7 @@ function parseRole(raw: unknown): UserRole | null {
 type JwtClaims = {
   sub?: unknown;
   role?: unknown;
+  [key: string]: unknown;
 };
 
 function getJwtPublicKey(): string | null {
@@ -52,6 +55,63 @@ function getRemoteJwks(url: URL): ReturnType<typeof createRemoteJWKSet> {
   const created = createRemoteJWKSet(url);
   jwksByUrl.set(key, created);
   return created;
+}
+
+function getRoleClaimPaths(env: NodeJS.ProcessEnv = process.env): string[] {
+  const raw = env.AUTH_ROLE_CLAIM_PATHS?.trim();
+  if (!raw) {
+    return [...defaultRoleClaimPaths];
+  }
+
+  const unique = new Set(
+    raw
+      .split(',')
+      .map((path) => path.trim())
+      .filter((path) => path.length > 0),
+  );
+
+  return unique.size > 0 ? Array.from(unique) : [...defaultRoleClaimPaths];
+}
+
+function getClaimAtPath(payload: Record<string, unknown>, path: string): unknown {
+  const segments = path.split('.').map((segment) => segment.trim()).filter((segment) => segment.length > 0);
+  if (segments.length === 0) {
+    return undefined;
+  }
+
+  let current: unknown = payload;
+  for (const segment of segments) {
+    if (!current || typeof current !== 'object') {
+      return undefined;
+    }
+    current = (current as Record<string, unknown>)[segment];
+  }
+
+  return current;
+}
+
+function parseRoleFromClaims(claims: JwtClaims, env: NodeJS.ProcessEnv = process.env): UserRole | null {
+  const roleClaimPaths = getRoleClaimPaths(env);
+  const record = claims as Record<string, unknown>;
+
+  for (const path of roleClaimPaths) {
+    const claimValue = getClaimAtPath(record, path);
+    const directRole = parseRole(claimValue);
+    if (directRole) {
+      return directRole;
+    }
+
+    if (Array.isArray(claimValue)) {
+      for (const entry of claimValue) {
+        const parsed = parseRole(entry);
+        if (parsed) {
+          return parsed;
+        }
+      }
+    }
+  }
+
+  return null;
 }
 
 async function verifyJwtToken(token: string): Promise<JwtClaims> {
@@ -125,7 +185,7 @@ export const resolveActorMiddleware: RequestHandler = async (req, res, next) => 
     return;
   }
 
-  const role = parseRole(claims.role);
+  const role = parseRoleFromClaims(claims);
   const userId = typeof claims.sub === 'string' ? claims.sub.trim() : '';
 
   if (!role || userId.length === 0) {

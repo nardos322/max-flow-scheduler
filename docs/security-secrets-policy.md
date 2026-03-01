@@ -10,6 +10,8 @@
 2. Usar variables de entorno para credenciales y tokens.
 3. Mantener solo templates (`.env.example`) con valores no sensibles.
 4. Si un secreto se expone, rotarlo de inmediato y revocar accesos relacionados.
+5. En `production`, preferir `JWT_JWKS_URL` (IdP externo) y evitar `JWT_SECRET` compartido.
+6. `AUTH_DEV_TOKEN_ENABLED` debe permanecer `false` fuera de entornos locales.
 
 ## CI Security Checks
 - Secret scanning automatizado en CI con `gitleaks`:
