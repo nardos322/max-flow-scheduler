@@ -115,7 +115,7 @@ _Ultima actualizacion manual: 2026-03-01 (alineado con evidencia en codigo/repos
 ### US-502 Resultado y no-factibilidad (P0, 5)
 - T-502.1 Mostrar asignaciones por dia. Owner: `frontend-planner-ui`. Estado: `done`
 - T-502.2 Mostrar dias no cubiertos y mensajes claros. Owner: `frontend-planner-ui`. Estado: `done`
-- T-502.3 Test de flujo principal UI->API. Owner: `qa-reliability`. Estado: `todo`
+- T-502.3 Test de flujo principal UI->API. Owner: `qa-reliability`. Estado: `done`
 - Done cuando:
   - Flujo end-to-end MVP operativo
 
@@ -132,8 +132,8 @@ _Ultima actualizacion manual: 2026-03-01 (alineado con evidencia en codigo/repos
   - Existe sprint planificable con configuracion global persistida
 
 ### US-552 Disponibilidad por medico y override planificador (P0, 8)
-- T-552.1 Flujo de autogestion de disponibilidad por medico. Owner: `frontend-planner-ui`. Estado: `todo`
-- T-552.2 Override manual por planificador cuando falte carga. Owner: `frontend-planner-ui`. Estado: `todo`
+- T-552.1 Flujo de autogestion de disponibilidad por medico. Owner: `frontend-planner-ui`. Estado: `done`
+- T-552.2 Override manual por planificador cuando falte carga. Owner: `frontend-planner-ui`. Estado: `done`
 - T-552.3 Validar permisos/roles en API para carga de disponibilidad. Owner: `security-compliance`. Estado: `done`
 - Done cuando:
   - Disponibilidad puede cargarse por medico o por planificador de forma trazable
