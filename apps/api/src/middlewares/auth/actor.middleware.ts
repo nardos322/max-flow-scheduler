@@ -30,6 +30,14 @@ function getJwtSecret(): string {
   return secret;
 }
 
+function getJwtPublicKey(): string | null {
+  const key = process.env.JWT_PUBLIC_KEY?.trim();
+  if (!key) {
+    return null;
+  }
+  return key;
+}
+
 function getJwtIssuer(): string {
   const issuer = process.env.JWT_ISSUER?.trim();
   if (!issuer) {
@@ -56,11 +64,22 @@ export const resolveActorMiddleware: RequestHandler = (req, res, next) => {
   const token = authorization.slice('Bearer '.length).trim();
   let claims: JwtClaims;
   try {
-    const payload = jwt.verify(token, getJwtSecret(), {
-      algorithms: ['HS256'],
-      audience: getJwtAudience(),
-      issuer: getJwtIssuer(),
-    });
+    const publicKey = getJwtPublicKey();
+    const payload = jwt.verify(
+      token,
+      publicKey ?? getJwtSecret(),
+      publicKey
+        ? {
+            algorithms: ['RS256'],
+            audience: getJwtAudience(),
+            issuer: getJwtIssuer(),
+          }
+        : {
+            algorithms: ['HS256'],
+            audience: getJwtAudience(),
+            issuer: getJwtIssuer(),
+          },
+    );
     if (typeof payload === 'string' || !payload) {
       next(new HttpError(401, { error: 'Invalid or expired JWT' }));
       return;
