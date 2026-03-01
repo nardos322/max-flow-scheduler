@@ -113,8 +113,8 @@ _Ultima actualizacion manual: 2026-03-01 (alineado con evidencia en codigo/repos
   - Formulario bloquea datos invalidos
 
 ### US-502 Resultado y no-factibilidad (P0, 5)
-- T-502.1 Mostrar asignaciones por dia. Owner: `frontend-planner-ui`. Estado: `todo`
-- T-502.2 Mostrar dias no cubiertos y mensajes claros. Owner: `frontend-planner-ui`. Estado: `todo`
+- T-502.1 Mostrar asignaciones por dia. Owner: `frontend-planner-ui`. Estado: `done`
+- T-502.2 Mostrar dias no cubiertos y mensajes claros. Owner: `frontend-planner-ui`. Estado: `done`
 - T-502.3 Test de flujo principal UI->API. Owner: `qa-reliability`. Estado: `todo`
 - Done cuando:
   - Flujo end-to-end MVP operativo
@@ -141,7 +141,7 @@ _Ultima actualizacion manual: 2026-03-01 (alineado con evidencia en codigo/repos
 ### US-553 Ready-to-solve y trazabilidad de corridas (P0, 5)
 - T-553.1 Validar estado `ready-to-solve` antes de ejecutar. Owner: `api-contracts`. Estado: `done`
 - T-553.2 Guardar snapshot de input/output por corrida. Owner: `integration-orchestrator`. Estado: `done`
-- T-553.3 Exponer historial de corridas por sprint. Owner: `frontend-planner-ui`. Estado: `todo`
+- T-553.3 Exponer historial de corridas por sprint. Owner: `frontend-planner-ui`. Estado: `done`
 - Done cuando:
   - Cada corrida queda registrada y consultable por sprint
 
