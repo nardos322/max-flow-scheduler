@@ -18,9 +18,9 @@ _Ultima actualizacion manual: 2026-03-01 (alineado con evidencia en codigo/repos
 
 ## EPIC E1 - Foundation Monorepo (Semanas 1-2)
 ### US-101 Definir arquitectura y alcance (P0, 5)
-- T-101.1 Documentar alcance funcional y no-funcional. Owner: `planner-architect`. Estado: `todo`
-- T-101.2 Publicar ADR v1 de arquitectura. Owner: `planner-architect`. Estado: `todo`
-- T-101.3 Revisar consistencia con modelo matematico. Owner: `modeling-theory`. Estado: `todo`
+- T-101.1 Documentar alcance funcional y no-funcional. Owner: `planner-architect`. Estado: `done`
+- T-101.2 Publicar ADR v1 de arquitectura. Owner: `planner-architect`. Estado: `done`
+- T-101.3 Revisar consistencia con modelo matematico. Owner: `modeling-theory`. Estado: `done`
 - Done cuando:
   - ADR aprobado
   - Alcance cerrado
