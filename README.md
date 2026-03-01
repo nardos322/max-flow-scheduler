@@ -82,6 +82,14 @@ Monorepo para planificacion de medicos en vacaciones usando un solver de max-flo
   - `400` para JSON mal formado
   - `5xx` sin detalles internos del solver
 
+## Swagger / OpenAPI (API)
+- JSON OpenAPI: `GET /openapi.json`
+- UI Swagger: `GET /docs`
+- Seguridad:
+  - Endpoints de negocio documentados con `BearerAuth` (JWT).
+  - `/health`, `/openapi.json` y `/docs` son publicos.
+  - En `dev`, tambien puede estar publico `POST /auth/dev/token` si `AUTH_DEV_TOKEN_ENABLED=true`.
+
 ## Docker (API + Engine)
 - API Dockerfile: `apps/api/Dockerfile`
 - Engine Dockerfile: `services/engine-cpp/Dockerfile`

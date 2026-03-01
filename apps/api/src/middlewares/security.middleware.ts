@@ -40,12 +40,16 @@ function resolveRateLimitConfig(): RateLimitOptions {
   };
 }
 
-export const securityHeadersMiddleware: RequestHandler = (_req, res, next) => {
+export const securityHeadersMiddleware: RequestHandler = (req, res, next) => {
   res.setHeader('x-content-type-options', 'nosniff');
   res.setHeader('x-frame-options', 'DENY');
   res.setHeader('referrer-policy', 'no-referrer');
   res.setHeader('permissions-policy', 'camera=(), geolocation=(), microphone=()');
-  res.setHeader('content-security-policy', "default-src 'none'; frame-ancestors 'none'; base-uri 'none'");
+  const requestPath = req.path ?? '';
+  const csp = requestPath.startsWith('/docs')
+    ? "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'"
+    : "default-src 'none'; frame-ancestors 'none'; base-uri 'none'";
+  res.setHeader('content-security-policy', csp);
   res.setHeader('cross-origin-resource-policy', 'same-origin');
   next();
 };
