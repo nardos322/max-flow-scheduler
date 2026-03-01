@@ -24,13 +24,33 @@ export const markSprintReadyController: RequestHandler = async (req, res, next) 
       return;
     }
 
-    const sprint = await markSprintReadyToSolve(sprintId);
-    if (!sprint) {
-      next(new HttpError(404, { error: 'Sprint not found' }));
+    const result = await markSprintReadyToSolve(sprintId);
+    if ('error' in result) {
+      if (result.error === 'SPRINT_NOT_FOUND') {
+        next(new HttpError(404, { error: 'Sprint not found' }));
+        return;
+      }
+
+      if (result.error === 'PERIOD_NOT_FOUND') {
+        next(new HttpError(404, { error: 'Period not found for sprint' }));
+        return;
+      }
+
+      if (result.error === 'DOCTOR_NOT_FOUND_OR_INACTIVE') {
+        next(new HttpError(422, { error: 'Sprint has missing or inactive doctors', details: result.details ?? [] }));
+        return;
+      }
+
+      if (result.error === 'NO_DOCTORS') {
+        next(new HttpError(422, { error: 'Sprint must include at least one doctor' }));
+        return;
+      }
+
+      next(new HttpError(422, { error: 'Sprint must include doctor availability before mark ready' }));
       return;
     }
 
-    res.status(200).json(sprint);
+    res.status(200).json(result.sprint);
   } catch (error) {
     next(error);
   }
