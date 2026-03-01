@@ -14,6 +14,19 @@ describe('securityHeadersMiddleware', () => {
     expect(setHeader).toHaveBeenCalledWith('content-security-policy', expect.stringContaining("default-src 'none'"));
     expect(next).toHaveBeenCalledWith();
   });
+
+  it('uses relaxed CSP for swagger docs route only', async () => {
+    const setHeader = vi.fn();
+    const next = vi.fn();
+
+    await securityHeadersMiddleware({ path: '/docs' } as never, { setHeader } as never, next);
+
+    expect(setHeader).toHaveBeenCalledWith(
+      'content-security-policy',
+      expect.stringContaining("default-src 'self'"),
+    );
+    expect(next).toHaveBeenCalledWith();
+  });
 });
 
 describe('rateLimitMiddleware', () => {

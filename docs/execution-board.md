@@ -99,6 +99,7 @@ _Ultima actualizacion manual: 2026-03-01 (alineado con evidencia en codigo/repos
 - T-402.1 Mapa de errores 400/422/500. Owner: `api-contracts`. Estado: `done`
 - T-402.2 Logging estructurado + requestId. Owner: `devops-release`. Estado: `done`
 - T-402.3 Tests integracion API-engine. Owner: `qa-reliability`. Estado: `done`
+- T-402.4 Publicar contrato OpenAPI y UI Swagger para consumo manual (`/openapi.json`, `/docs`). Owner: `api-contracts`. Estado: `done`
 - Done cuando:
   - Errores consistentes y trazables
 
