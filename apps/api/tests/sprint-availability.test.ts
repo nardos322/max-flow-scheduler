@@ -49,6 +49,8 @@ async function createBaseSprint(): Promise<{ id: string }> {
 describe('sprint availability controllers', () => {
   beforeEach(async () => {
     process.env.JWT_SECRET = 'test-secret';
+    process.env.JWT_ISSUER = 'scheduler-api-tests';
+    process.env.JWT_AUDIENCE = 'scheduler-api';
     await clearSprintStore();
   });
 
@@ -58,7 +60,13 @@ describe('sprint availability controllers', () => {
     const req = {
       headers: {
         authorization: `Bearer ${signTestJwt(
-          { sub: 'd1', role: 'doctor', exp: Math.floor(Date.now() / 1000) + 3600 },
+          {
+            sub: 'd1',
+            role: 'doctor',
+            iss: 'scheduler-api-tests',
+            aud: 'scheduler-api',
+            exp: Math.floor(Date.now() / 1000) + 3600,
+          },
           'test-secret',
         )}`,
       },
@@ -111,7 +119,13 @@ describe('sprint availability controllers', () => {
     const req = {
       headers: {
         authorization: `Bearer ${signTestJwt(
-          { sub: 'd1', role: 'doctor', exp: Math.floor(Date.now() / 1000) + 3600 },
+          {
+            sub: 'd1',
+            role: 'doctor',
+            iss: 'scheduler-api-tests',
+            aud: 'scheduler-api',
+            exp: Math.floor(Date.now() / 1000) + 3600,
+          },
           'test-secret',
         )}`,
       },
@@ -139,7 +153,13 @@ describe('sprint availability controllers', () => {
     const req = {
       headers: {
         authorization: `Bearer ${signTestJwt(
-          { sub: 'planner-1', role: 'planner', exp: Math.floor(Date.now() / 1000) + 3600 },
+          {
+            sub: 'planner-1',
+            role: 'planner',
+            iss: 'scheduler-api-tests',
+            aud: 'scheduler-api',
+            exp: Math.floor(Date.now() / 1000) + 3600,
+          },
           'test-secret',
         )}`,
       },
@@ -179,7 +199,13 @@ describe('sprint availability controllers', () => {
     const req = {
       headers: {
         authorization: `Bearer ${signTestJwt(
-          { sub: 'd1', role: 'doctor', exp: Math.floor(Date.now() / 1000) + 3600 },
+          {
+            sub: 'd1',
+            role: 'doctor',
+            iss: 'scheduler-api-tests',
+            aud: 'scheduler-api',
+            exp: Math.floor(Date.now() / 1000) + 3600,
+          },
           'test-secret',
         )}`,
       },
@@ -201,7 +227,13 @@ describe('sprint availability controllers', () => {
     const updateReq = {
       headers: {
         authorization: `Bearer ${signTestJwt(
-          { sub: 'd1', role: 'doctor', exp: Math.floor(Date.now() / 1000) + 3600 },
+          {
+            sub: 'd1',
+            role: 'doctor',
+            iss: 'scheduler-api-tests',
+            aud: 'scheduler-api',
+            exp: Math.floor(Date.now() / 1000) + 3600,
+          },
           'test-secret',
         )}`,
       },

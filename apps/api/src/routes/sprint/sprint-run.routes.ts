@@ -4,6 +4,7 @@ import {
   markSprintReadyController,
   runSprintSolveController,
 } from '../../controllers/sprint/sprint-run.controller.js';
+import { requireRoleMiddleware } from '../../middlewares/auth/actor.middleware.js';
 import {
   validateMarkSprintReadyMiddleware,
   validateRunSprintSolveMiddleware,
@@ -12,9 +13,9 @@ import {
 export function createSprintRunRoutes(): Router {
   const router = Router();
 
-  router.patch('/sprints/:sprintId/status', validateMarkSprintReadyMiddleware, markSprintReadyController);
-  router.post('/sprints/:sprintId/runs', validateRunSprintSolveMiddleware, runSprintSolveController);
-  router.get('/sprints/:sprintId/runs', listSprintRunsController);
+  router.patch('/sprints/:sprintId/status', requireRoleMiddleware('planner'), validateMarkSprintReadyMiddleware, markSprintReadyController);
+  router.post('/sprints/:sprintId/runs', requireRoleMiddleware('planner'), validateRunSprintSolveMiddleware, runSprintSolveController);
+  router.get('/sprints/:sprintId/runs', requireRoleMiddleware('planner'), listSprintRunsController);
 
   return router;
 }

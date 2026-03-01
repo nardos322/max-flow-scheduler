@@ -45,6 +45,9 @@ Monorepo para planificacion de medicos en vacaciones usando un solver de max-flo
   - `API_RATE_LIMIT_MAX_REQUESTS` (default `120`)
 - Limite de body JSON configurable:
   - `API_BODY_LIMIT` (default `100kb`)
+- Autenticacion/autorizacion JWT en endpoints de negocio:
+  - Claims obligatorios: `sub`, `role`, `iss`, `aud`, `exp` (y respeta `nbf` si existe)
+  - Config requerida: `JWT_SECRET`, `JWT_ISSUER`, `JWT_AUDIENCE`
 - Sanitizacion de errores:
   - `413` para payload demasiado grande
   - `400` para JSON mal formado
@@ -60,5 +63,5 @@ Monorepo para planificacion de medicos en vacaciones usando un solver de max-flo
 
 ## Nota MVP
 - Integracion API -> engine via CLI (`stdin/stdout`).
-- Autenticacion JWT basica en endpoints de disponibilidad.
+- Autenticacion JWT aplicada a endpoints de negocio; `/health` permanece publico.
 - Persistencia backend de sprints/corridas sobre Prisma + SQLite.

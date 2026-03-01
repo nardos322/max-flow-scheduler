@@ -30,6 +30,22 @@ function getJwtSecret(): string {
   return secret;
 }
 
+function getJwtIssuer(): string {
+  const issuer = process.env.JWT_ISSUER?.trim();
+  if (!issuer) {
+    throw new HttpError(500, { error: 'JWT_ISSUER is not configured' });
+  }
+  return issuer;
+}
+
+function getJwtAudience(): string {
+  const audience = process.env.JWT_AUDIENCE?.trim();
+  if (!audience) {
+    throw new HttpError(500, { error: 'JWT_AUDIENCE is not configured' });
+  }
+  return audience;
+}
+
 export const resolveActorMiddleware: RequestHandler = (req, res, next) => {
   const authorization = req.headers.authorization;
   if (!authorization || !authorization.startsWith('Bearer ')) {
@@ -40,7 +56,11 @@ export const resolveActorMiddleware: RequestHandler = (req, res, next) => {
   const token = authorization.slice('Bearer '.length).trim();
   let claims: JwtClaims;
   try {
-    const payload = jwt.verify(token, getJwtSecret(), { algorithms: ['HS256'] });
+    const payload = jwt.verify(token, getJwtSecret(), {
+      algorithms: ['HS256'],
+      audience: getJwtAudience(),
+      issuer: getJwtIssuer(),
+    });
     if (typeof payload === 'string' || !payload) {
       next(new HttpError(401, { error: 'Invalid or expired JWT' }));
       return;
