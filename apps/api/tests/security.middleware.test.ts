@@ -18,8 +18,7 @@ describe('securityHeadersMiddleware', () => {
 
 describe('rateLimitMiddleware', () => {
   it('returns 429 after request threshold in same window', async () => {
-    let now = 1_000;
-    const middleware = createRateLimitMiddleware({ maxRequests: 2, now: () => now, windowMs: 10_000 });
+    const middleware = createRateLimitMiddleware({ maxRequests: 2, windowMs: 10_000 });
     const next = vi.fn();
     const status = vi.fn().mockReturnThis();
     const json = vi.fn();
@@ -42,8 +41,7 @@ describe('rateLimitMiddleware', () => {
   });
 
   it('resets counters after window elapses', async () => {
-    let now = 2_000;
-    const middleware = createRateLimitMiddleware({ maxRequests: 1, now: () => now, windowMs: 1_000 });
+    const middleware = createRateLimitMiddleware({ maxRequests: 1, windowMs: 20 });
     const next = vi.fn();
     const status = vi.fn().mockReturnThis();
     const json = vi.fn();
@@ -51,7 +49,7 @@ describe('rateLimitMiddleware', () => {
     const res = { locals: { requestId: 'req-reset' }, status, json, setHeader: vi.fn() };
 
     await middleware(req as never, res as never, next);
-    now = 3_500;
+    await new Promise((resolve) => setTimeout(resolve, 35));
     await middleware(req as never, res as never, next);
 
     expect(next).toHaveBeenCalledTimes(2);

@@ -1,15 +1,10 @@
 import type { RequestHandler } from 'express';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import type { RequestContextLocals } from './request-context.middleware.js';
 
-type RateLimitBucket = {
-  count: number;
-  windowStartedAt: number;
-};
-
 type RateLimitOptions = {
-  maxRequests: number;
-  now: () => number;
   windowMs: number;
+  maxRequests: number;
 };
 
 const DEFAULT_RATE_LIMIT_WINDOW_MS = 60_000;
@@ -42,7 +37,6 @@ function resolveRateLimitConfig(): RateLimitOptions {
   return {
     windowMs: parsePositiveInt(process.env.API_RATE_LIMIT_WINDOW_MS, DEFAULT_RATE_LIMIT_WINDOW_MS),
     maxRequests: parsePositiveInt(process.env.API_RATE_LIMIT_MAX_REQUESTS, DEFAULT_RATE_LIMIT_MAX_REQUESTS),
-    now: () => Date.now(),
   };
 }
 
@@ -58,21 +52,18 @@ export const securityHeadersMiddleware: RequestHandler = (_req, res, next) => {
 
 export function createRateLimitMiddleware(options?: Partial<RateLimitOptions>): RequestHandler {
   const config = { ...resolveRateLimitConfig(), ...options };
-  const buckets = new Map<string, RateLimitBucket>();
 
-  return (req, res, next) => {
-    const now = config.now();
-    const key = req.ip || req.socket.remoteAddress || 'unknown';
-    const current = buckets.get(key);
-
-    if (!current || now - current.windowStartedAt >= config.windowMs) {
-      buckets.set(key, { count: 1, windowStartedAt: now });
-      next();
-      return;
-    }
-
-    if (current.count >= config.maxRequests) {
-      const retryAfterSeconds = Math.max(1, Math.ceil((config.windowMs - (now - current.windowStartedAt)) / 1000));
+  return rateLimit({
+    legacyHeaders: false,
+    max: config.maxRequests,
+    standardHeaders: false,
+    windowMs: config.windowMs,
+    keyGenerator: (req) => ipKeyGenerator(req.ip ?? req.socket.remoteAddress ?? 'unknown'),
+    handler: (req, res) => {
+      const resetTime = (req as { rateLimit?: { resetTime?: Date } }).rateLimit?.resetTime?.getTime();
+      const retryAfterSeconds = resetTime
+        ? Math.max(1, Math.ceil((resetTime - Date.now()) / 1000))
+        : Math.max(1, Math.ceil(config.windowMs / 1000));
       res.setHeader('retry-after', String(retryAfterSeconds));
 
       const requestId = (res.locals as RequestContextLocals).requestId;
@@ -81,13 +72,8 @@ export function createRateLimitMiddleware(options?: Partial<RateLimitOptions>): 
         code: 'RATE_LIMITED',
         requestId,
       });
-      return;
-    }
-
-    current.count += 1;
-    buckets.set(key, current);
-    next();
-  };
+    },
+  });
 }
 
 export const rateLimitMiddleware: RequestHandler = createRateLimitMiddleware();
