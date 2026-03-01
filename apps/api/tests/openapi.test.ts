@@ -9,4 +9,25 @@ describe('openApiDocument', () => {
     expect(openApiDocument.paths['/schedule/solve']).toBeDefined();
     expect(openApiDocument.paths['/sprints/{sprintId}/runs']).toBeDefined();
   });
+
+  it('uses detailed schemas for key request bodies', () => {
+    expect(
+      openApiDocument.paths['/doctors'].post.requestBody.content['application/json'].schema.$ref,
+    ).toBe('#/components/schemas/CreateDoctorRequest');
+    expect(
+      openApiDocument.paths['/periods/{periodId}/demands'].put.requestBody.content['application/json'].schema.$ref,
+    ).toBe('#/components/schemas/ReplacePeriodDemandsRequest');
+    expect(
+      openApiDocument.paths['/schedule/solve'].post.requestBody.content['application/json'].schema.$ref,
+    ).toBe('#/components/schemas/SolveRequest');
+  });
+
+  it('declares typed success responses for sprint run flow', () => {
+    expect(
+      openApiDocument.paths['/sprints/{sprintId}/runs'].post.responses['200'].content['application/json'].schema.$ref,
+    ).toBe('#/components/schemas/RunSprintSolveResponse');
+    expect(
+      openApiDocument.paths['/sprints/{sprintId}/runs'].get.responses['200'].content['application/json'].schema.$ref,
+    ).toBe('#/components/schemas/SprintRunListResponse');
+  });
 });

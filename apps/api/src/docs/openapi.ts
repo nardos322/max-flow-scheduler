@@ -1,3 +1,46 @@
+const ref = (name: string) => ({ $ref: `#/components/schemas/${name}` });
+
+const jsonContent = (schemaName: string) => ({
+  'application/json': {
+    schema: ref(schemaName),
+  },
+});
+
+const errorResponses = {
+  BadRequest: {
+    description: 'Invalid request',
+    content: jsonContent('ErrorResponse'),
+  },
+  Unauthorized: {
+    description: 'Missing/invalid JWT',
+    content: jsonContent('ErrorResponse'),
+  },
+  Forbidden: {
+    description: 'Forbidden for actor role',
+    content: jsonContent('ErrorResponse'),
+  },
+  NotFound: {
+    description: 'Resource not found',
+    content: jsonContent('ErrorResponse'),
+  },
+  Conflict: {
+    description: 'Resource conflict',
+    content: jsonContent('ErrorResponse'),
+  },
+  Unprocessable: {
+    description: 'Business rule violation',
+    content: jsonContent('ErrorResponse'),
+  },
+  TooManyRequests: {
+    description: 'Rate limited',
+    content: jsonContent('ErrorResponse'),
+  },
+  InternalServerError: {
+    description: 'Unexpected server error',
+    content: jsonContent('ErrorResponse'),
+  },
+} as const;
+
 export const openApiDocument = {
   openapi: '3.0.3',
   info: {
@@ -24,7 +67,16 @@ export const openApiDocument = {
         bearerFormat: 'JWT',
       },
     },
+    responses: errorResponses,
     schemas: {
+      ErrorIssue: {
+        type: 'object',
+        required: ['path', 'message'],
+        properties: {
+          path: { type: 'string' },
+          message: { type: 'string' },
+        },
+      },
       ErrorResponse: {
         type: 'object',
         required: ['error'],
@@ -32,48 +84,223 @@ export const openApiDocument = {
           error: { type: 'string' },
           code: { type: 'string' },
           requestId: { type: 'string' },
-          issues: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                path: { type: 'string' },
-                message: { type: 'string' },
-              },
-            },
-          },
+          details: { type: 'array', items: { type: 'string' } },
+          issues: { type: 'array', items: ref('ErrorIssue') },
         },
       },
+
+      HealthResponse: {
+        type: 'object',
+        required: ['status'],
+        properties: {
+          status: { type: 'string', enum: ['ok'] },
+        },
+      },
+
+      DevTokenRequest: {
+        type: 'object',
+        required: ['userId', 'role'],
+        properties: {
+          userId: { type: 'string', minLength: 1 },
+          role: { type: 'string', enum: ['doctor', 'planner'] },
+          expiresInSeconds: { type: 'integer', minimum: 1, maximum: 43200 },
+        },
+      },
+      DevTokenResponse: {
+        type: 'object',
+        required: ['accessToken', 'tokenType', 'expiresInSeconds', 'issuer', 'audience'],
+        properties: {
+          accessToken: { type: 'string' },
+          tokenType: { type: 'string', enum: ['Bearer'] },
+          expiresInSeconds: { type: 'integer' },
+          issuer: { type: 'string' },
+          audience: { type: 'string' },
+        },
+      },
+
       Doctor: {
         type: 'object',
-        required: ['id', 'name', 'active'],
+        required: ['id', 'name', 'active', 'createdAt', 'updatedAt'],
         properties: {
           id: { type: 'string' },
           name: { type: 'string' },
           active: { type: 'boolean' },
-          maxTotalDaysDefault: { type: 'integer', nullable: true },
+          maxTotalDaysDefault: { type: 'integer' },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
         },
       },
+      DoctorListResponse: {
+        type: 'object',
+        required: ['items'],
+        properties: {
+          items: { type: 'array', items: ref('Doctor') },
+        },
+      },
+      CreateDoctorRequest: {
+        type: 'object',
+        required: ['name'],
+        properties: {
+          name: { type: 'string', minLength: 1 },
+          active: { type: 'boolean' },
+          maxTotalDaysDefault: { type: 'integer', minimum: 1 },
+        },
+      },
+      UpdateDoctorRequest: {
+        type: 'object',
+        minProperties: 1,
+        properties: {
+          name: { type: 'string', minLength: 1 },
+          active: { type: 'boolean' },
+          maxTotalDaysDefault: { type: 'integer', minimum: 1 },
+        },
+      },
+
       PeriodDemand: {
         type: 'object',
         required: ['dayId', 'requiredDoctors'],
         properties: {
           dayId: { type: 'string', format: 'date' },
-          requiredDoctors: { type: 'integer' },
+          requiredDoctors: { type: 'integer', minimum: 1 },
         },
       },
       Period: {
         type: 'object',
-        required: ['id', 'name', 'startsOn', 'endsOn', 'demands'],
+        required: ['id', 'name', 'startsOn', 'endsOn', 'demands', 'createdAt', 'updatedAt'],
         properties: {
           id: { type: 'string' },
           name: { type: 'string' },
           startsOn: { type: 'string', format: 'date' },
           endsOn: { type: 'string', format: 'date' },
-          demands: {
-            type: 'array',
-            items: { $ref: '#/components/schemas/PeriodDemand' },
-          },
+          demands: { type: 'array', items: ref('PeriodDemand') },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
+        },
+      },
+      PeriodListResponse: {
+        type: 'object',
+        required: ['items'],
+        properties: {
+          items: { type: 'array', items: ref('Period') },
+        },
+      },
+      CreatePeriodRequest: {
+        type: 'object',
+        required: ['name', 'startsOn', 'endsOn'],
+        properties: {
+          name: { type: 'string', minLength: 1 },
+          startsOn: { type: 'string', format: 'date' },
+          endsOn: { type: 'string', format: 'date' },
+          demands: { type: 'array', items: ref('PeriodDemand') },
+        },
+      },
+      UpdatePeriodRequest: {
+        type: 'object',
+        minProperties: 1,
+        properties: {
+          name: { type: 'string', minLength: 1 },
+          startsOn: { type: 'string', format: 'date' },
+          endsOn: { type: 'string', format: 'date' },
+        },
+      },
+      ReplacePeriodDemandsRequest: {
+        type: 'object',
+        required: ['demands'],
+        properties: {
+          demands: { type: 'array', items: ref('PeriodDemand') },
+        },
+      },
+
+      SolveDoctor: {
+        type: 'object',
+        required: ['id', 'maxTotalDays'],
+        properties: {
+          id: { type: 'string', minLength: 1 },
+          maxTotalDays: { type: 'integer', minimum: 0 },
+        },
+      },
+      SolvePeriod: {
+        type: 'object',
+        required: ['id', 'dayIds'],
+        properties: {
+          id: { type: 'string', minLength: 1 },
+          dayIds: { type: 'array', minItems: 1, items: { type: 'string', minLength: 1 } },
+        },
+      },
+      SolveAvailability: {
+        type: 'object',
+        required: ['doctorId', 'periodId', 'dayId'],
+        properties: {
+          doctorId: { type: 'string', minLength: 1 },
+          periodId: { type: 'string', minLength: 1 },
+          dayId: { type: 'string', minLength: 1 },
+        },
+      },
+      SolveRequest: {
+        type: 'object',
+        required: ['contractVersion', 'doctors', 'periods', 'demands', 'availability'],
+        properties: {
+          contractVersion: { type: 'string', enum: ['1.0'] },
+          doctors: { type: 'array', items: ref('SolveDoctor') },
+          periods: { type: 'array', items: ref('SolvePeriod') },
+          demands: { type: 'array', items: ref('PeriodDemand') },
+          availability: { type: 'array', items: ref('SolveAvailability') },
+        },
+      },
+      SolveAssignment: {
+        type: 'object',
+        required: ['doctorId', 'periodId', 'dayId'],
+        properties: {
+          doctorId: { type: 'string' },
+          periodId: { type: 'string' },
+          dayId: { type: 'string' },
+        },
+      },
+      MinCutEdge: {
+        type: 'object',
+        required: ['from', 'to', 'capacity'],
+        properties: {
+          from: { type: 'string' },
+          to: { type: 'string' },
+          capacity: { type: 'integer', minimum: 0 },
+        },
+      },
+      MinCut: {
+        type: 'object',
+        required: ['value', 'reachableNodes', 'cutEdges'],
+        properties: {
+          value: { type: 'integer', minimum: 0 },
+          reachableNodes: { type: 'array', items: { type: 'string' } },
+          cutEdges: { type: 'array', items: ref('MinCutEdge') },
+        },
+      },
+      SolveResponse: {
+        type: 'object',
+        required: ['contractVersion', 'isFeasible', 'assignedCount', 'uncoveredDays', 'assignments'],
+        properties: {
+          contractVersion: { type: 'string', enum: ['1.0'] },
+          isFeasible: { type: 'boolean' },
+          assignedCount: { type: 'integer', minimum: 0 },
+          uncoveredDays: { type: 'array', items: { type: 'string' } },
+          assignments: { type: 'array', items: ref('SolveAssignment') },
+          minCut: ref('MinCut'),
+        },
+      },
+
+      SprintGlobalConfig: {
+        type: 'object',
+        required: ['requiredDoctorsPerShift', 'maxDaysPerDoctorDefault'],
+        properties: {
+          requiredDoctorsPerShift: { type: 'integer', minimum: 1 },
+          maxDaysPerDoctorDefault: { type: 'integer', minimum: 1 },
+        },
+      },
+      AvailabilityDay: {
+        type: 'object',
+        required: ['periodId', 'dayId'],
+        properties: {
+          periodId: { type: 'string', minLength: 1 },
+          dayId: { type: 'string', minLength: 1 },
         },
       },
       SprintAvailabilityEntry: {
@@ -82,7 +309,7 @@ export const openApiDocument = {
         properties: {
           doctorId: { type: 'string' },
           periodId: { type: 'string' },
-          dayId: { type: 'string', format: 'date' },
+          dayId: { type: 'string' },
           source: { type: 'string', enum: ['doctor-self-service', 'planner-override'] },
           updatedByUserId: { type: 'string' },
           updatedByRole: { type: 'string', enum: ['doctor', 'planner'] },
@@ -97,18 +324,83 @@ export const openApiDocument = {
           name: { type: 'string' },
           periodId: { type: 'string' },
           status: { type: 'string', enum: ['draft', 'ready-to-solve', 'solved'] },
-          globalConfig: {
-            type: 'object',
-            required: ['requiredDoctorsPerShift', 'maxDaysPerDoctorDefault'],
-            properties: {
-              requiredDoctorsPerShift: { type: 'integer' },
-              maxDaysPerDoctorDefault: { type: 'integer' },
-            },
-          },
+          globalConfig: ref('SprintGlobalConfig'),
           doctorIds: { type: 'array', items: { type: 'string' } },
-          availability: { type: 'array', items: { $ref: '#/components/schemas/SprintAvailabilityEntry' } },
+          availability: { type: 'array', items: ref('SprintAvailabilityEntry') },
           createdAt: { type: 'string', format: 'date-time' },
           updatedAt: { type: 'string', format: 'date-time' },
+        },
+      },
+      SprintListResponse: {
+        type: 'object',
+        required: ['items'],
+        properties: {
+          items: { type: 'array', items: ref('Sprint') },
+        },
+      },
+      CreateSprintRequest: {
+        type: 'object',
+        required: ['name', 'periodId', 'globalConfig'],
+        properties: {
+          name: { type: 'string', minLength: 1 },
+          periodId: { type: 'string', minLength: 1 },
+          globalConfig: ref('SprintGlobalConfig'),
+          doctorIds: { type: 'array', items: { type: 'string', minLength: 1 } },
+        },
+      },
+      UpdateSprintGlobalConfigRequest: {
+        type: 'object',
+        required: ['globalConfig'],
+        properties: {
+          globalConfig: ref('SprintGlobalConfig'),
+        },
+      },
+      AddSprintDoctorRequest: {
+        type: 'object',
+        required: ['doctorId'],
+        properties: {
+          doctorId: { type: 'string', minLength: 1 },
+        },
+      },
+      SetDoctorAvailabilityRequest: {
+        type: 'object',
+        required: ['availability'],
+        properties: {
+          availability: { type: 'array', items: ref('AvailabilityDay') },
+        },
+      },
+      PlannerOverrideAvailabilityRequest: {
+        type: 'object',
+        required: ['doctorId', 'availability'],
+        properties: {
+          doctorId: { type: 'string', minLength: 1 },
+          availability: { type: 'array', items: ref('AvailabilityDay') },
+        },
+      },
+      SprintAvailabilityListResponse: {
+        type: 'object',
+        required: ['items'],
+        properties: {
+          items: { type: 'array', items: ref('SprintAvailabilityEntry') },
+        },
+      },
+      MarkSprintReadyRequest: {
+        type: 'object',
+        required: ['status'],
+        properties: {
+          status: { type: 'string', enum: ['ready-to-solve'] },
+        },
+      },
+      RunSprintSolveRequest: {
+        type: 'object',
+        additionalProperties: false,
+      },
+      SprintRunError: {
+        type: 'object',
+        required: ['code', 'message'],
+        properties: {
+          code: { type: 'string' },
+          message: { type: 'string' },
         },
       },
       SprintRun: {
@@ -119,38 +411,24 @@ export const openApiDocument = {
           sprintId: { type: 'string' },
           executedAt: { type: 'string', format: 'date-time' },
           status: { type: 'string', enum: ['succeeded', 'failed'] },
-          inputSnapshot: { type: 'object' },
-          outputSnapshot: { type: 'object', nullable: true },
-          error: {
-            type: 'object',
-            nullable: true,
-            properties: {
-              code: { type: 'string' },
-              message: { type: 'string' },
-            },
-          },
+          inputSnapshot: ref('SolveRequest'),
+          outputSnapshot: ref('SolveResponse'),
+          error: ref('SprintRunError'),
         },
       },
-      SolveResponse: {
+      SprintRunListResponse: {
         type: 'object',
-        required: ['contractVersion', 'isFeasible', 'assignedCount', 'uncoveredDays', 'assignments'],
+        required: ['items'],
         properties: {
-          contractVersion: { type: 'string' },
-          isFeasible: { type: 'boolean' },
-          assignedCount: { type: 'integer' },
-          uncoveredDays: { type: 'array', items: { type: 'string' } },
-          assignments: {
-            type: 'array',
-            items: {
-              type: 'object',
-              required: ['doctorId', 'periodId', 'dayId'],
-              properties: {
-                doctorId: { type: 'string' },
-                periodId: { type: 'string' },
-                dayId: { type: 'string' },
-              },
-            },
-          },
+          items: { type: 'array', items: ref('SprintRun') },
+        },
+      },
+      RunSprintSolveResponse: {
+        type: 'object',
+        required: ['run', 'result'],
+        properties: {
+          run: ref('SprintRun'),
+          result: ref('SolveResponse'),
         },
       },
     },
@@ -160,114 +438,179 @@ export const openApiDocument = {
       get: {
         tags: ['health'],
         summary: 'Healthcheck',
-        responses: { '200': { description: 'OK' } },
+        responses: {
+          '200': { description: 'OK', content: jsonContent('HealthResponse') },
+        },
+      },
+    },
+    '/openapi.json': {
+      get: {
+        tags: ['health'],
+        summary: 'OpenAPI document',
+        responses: {
+          '200': { description: 'OpenAPI JSON' },
+        },
       },
     },
     '/auth/dev/token': {
       post: {
         tags: ['auth'],
         summary: 'Emitir JWT para desarrollo',
-        description: 'Disponible solo cuando AUTH_DEV_TOKEN_ENABLED=true.',
+        description: 'Disponible solo cuando AUTH_DEV_TOKEN_ENABLED=true y JWT_SECRET configurado.',
         requestBody: {
           required: true,
-          content: {
-            'application/json': {
-              schema: {
-                type: 'object',
-                required: ['userId', 'role'],
-                properties: {
-                  userId: { type: 'string' },
-                  role: { type: 'string', enum: ['doctor', 'planner'] },
-                  expiresInSeconds: { type: 'integer', minimum: 1, maximum: 43200 },
-                },
-              },
-            },
-          },
+          content: jsonContent('DevTokenRequest'),
         },
         responses: {
-          '201': { description: 'Token emitido' },
-          '400': { description: 'Payload invalido', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
-          '404': { description: 'Deshabilitado', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
-          '422': { description: 'Modo auth incompatible', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '201': { description: 'Token emitido', content: jsonContent('DevTokenResponse') },
+          '400': { $ref: '#/components/responses/BadRequest' },
+          '404': { $ref: '#/components/responses/NotFound' },
+          '422': { $ref: '#/components/responses/Unprocessable' },
+          '500': { $ref: '#/components/responses/InternalServerError' },
         },
       },
     },
+
     '/doctors': {
       get: {
         tags: ['doctors'],
         summary: 'Listar medicos',
         security: [{ BearerAuth: [] }],
-        responses: { '200': { description: 'Lista de medicos' }, '401': { description: 'No autorizado' }, '403': { description: 'Forbidden' } },
+        responses: {
+          '200': { description: 'Lista de medicos', content: jsonContent('DoctorListResponse') },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+        },
       },
       post: {
         tags: ['doctors'],
         summary: 'Crear medico',
         security: [{ BearerAuth: [] }],
-        requestBody: { required: true, content: { 'application/json': { schema: { type: 'object' } } } },
-        responses: { '201': { description: 'Creado' }, '400': { description: 'Payload invalido' } },
+        requestBody: {
+          required: true,
+          content: jsonContent('CreateDoctorRequest'),
+        },
+        responses: {
+          '201': { description: 'Medico creado', content: jsonContent('Doctor') },
+          '400': { $ref: '#/components/responses/BadRequest' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+        },
       },
     },
     '/doctors/{doctorId}': {
       get: {
         tags: ['doctors'],
-        summary: 'Obtener medico',
+        summary: 'Obtener medico por id',
         security: [{ BearerAuth: [] }],
         parameters: [{ name: 'doctorId', in: 'path', required: true, schema: { type: 'string' } }],
-        responses: { '200': { description: 'Medico', content: { 'application/json': { schema: { $ref: '#/components/schemas/Doctor' } } } } },
+        responses: {
+          '200': { description: 'Medico', content: jsonContent('Doctor') },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '404': { $ref: '#/components/responses/NotFound' },
+        },
       },
       patch: {
         tags: ['doctors'],
         summary: 'Actualizar medico',
         security: [{ BearerAuth: [] }],
         parameters: [{ name: 'doctorId', in: 'path', required: true, schema: { type: 'string' } }],
-        requestBody: { required: true, content: { 'application/json': { schema: { type: 'object' } } } },
-        responses: { '200': { description: 'Actualizado' } },
+        requestBody: {
+          required: true,
+          content: jsonContent('UpdateDoctorRequest'),
+        },
+        responses: {
+          '200': { description: 'Medico actualizado', content: jsonContent('Doctor') },
+          '400': { $ref: '#/components/responses/BadRequest' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '404': { $ref: '#/components/responses/NotFound' },
+        },
       },
       delete: {
         tags: ['doctors'],
         summary: 'Eliminar medico',
         security: [{ BearerAuth: [] }],
         parameters: [{ name: 'doctorId', in: 'path', required: true, schema: { type: 'string' } }],
-        responses: { '204': { description: 'Eliminado' } },
+        responses: {
+          '204': { description: 'Medico eliminado' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '404': { $ref: '#/components/responses/NotFound' },
+        },
       },
     },
+
     '/periods': {
       get: {
         tags: ['periods'],
         summary: 'Listar periodos',
         security: [{ BearerAuth: [] }],
-        responses: { '200': { description: 'Lista de periodos' } },
+        responses: {
+          '200': { description: 'Lista de periodos', content: jsonContent('PeriodListResponse') },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+        },
       },
       post: {
         tags: ['periods'],
         summary: 'Crear periodo',
         security: [{ BearerAuth: [] }],
-        requestBody: { required: true, content: { 'application/json': { schema: { type: 'object' } } } },
-        responses: { '201': { description: 'Creado' } },
+        requestBody: {
+          required: true,
+          content: jsonContent('CreatePeriodRequest'),
+        },
+        responses: {
+          '201': { description: 'Periodo creado', content: jsonContent('Period') },
+          '400': { $ref: '#/components/responses/BadRequest' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+        },
       },
     },
     '/periods/{periodId}': {
       get: {
         tags: ['periods'],
-        summary: 'Obtener periodo',
+        summary: 'Obtener periodo por id',
         security: [{ BearerAuth: [] }],
         parameters: [{ name: 'periodId', in: 'path', required: true, schema: { type: 'string' } }],
-        responses: { '200': { description: 'Periodo', content: { 'application/json': { schema: { $ref: '#/components/schemas/Period' } } } } },
+        responses: {
+          '200': { description: 'Periodo', content: jsonContent('Period') },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '404': { $ref: '#/components/responses/NotFound' },
+        },
       },
       patch: {
         tags: ['periods'],
         summary: 'Actualizar periodo',
         security: [{ BearerAuth: [] }],
         parameters: [{ name: 'periodId', in: 'path', required: true, schema: { type: 'string' } }],
-        requestBody: { required: true, content: { 'application/json': { schema: { type: 'object' } } } },
-        responses: { '200': { description: 'Actualizado' } },
+        requestBody: {
+          required: true,
+          content: jsonContent('UpdatePeriodRequest'),
+        },
+        responses: {
+          '200': { description: 'Periodo actualizado', content: jsonContent('Period') },
+          '400': { $ref: '#/components/responses/BadRequest' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '404': { $ref: '#/components/responses/NotFound' },
+          '422': { $ref: '#/components/responses/Unprocessable' },
+        },
       },
       delete: {
         tags: ['periods'],
         summary: 'Eliminar periodo',
         security: [{ BearerAuth: [] }],
         parameters: [{ name: 'periodId', in: 'path', required: true, schema: { type: 'string' } }],
-        responses: { '204': { description: 'Eliminado' } },
+        responses: {
+          '204': { description: 'Periodo eliminado' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '404': { $ref: '#/components/responses/NotFound' },
+        },
       },
     },
     '/periods/{periodId}/demands': {
@@ -276,56 +619,99 @@ export const openApiDocument = {
         summary: 'Reemplazar demandas diarias del periodo',
         security: [{ BearerAuth: [] }],
         parameters: [{ name: 'periodId', in: 'path', required: true, schema: { type: 'string' } }],
-        requestBody: { required: true, content: { 'application/json': { schema: { type: 'object' } } } },
-        responses: { '200': { description: 'Demandas actualizadas' } },
+        requestBody: {
+          required: true,
+          content: jsonContent('ReplacePeriodDemandsRequest'),
+        },
+        responses: {
+          '200': { description: 'Demandas actualizadas', content: jsonContent('Period') },
+          '400': { $ref: '#/components/responses/BadRequest' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '404': { $ref: '#/components/responses/NotFound' },
+        },
       },
     },
+
     '/schedule/solve': {
       post: {
         tags: ['schedule'],
         summary: 'Resolver escenario puntual',
         security: [{ BearerAuth: [] }],
-        requestBody: { required: true, content: { 'application/json': { schema: { type: 'object' } } } },
+        requestBody: {
+          required: true,
+          content: jsonContent('SolveRequest'),
+        },
         responses: {
-          '200': {
-            description: 'Resultado',
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/SolveResponse' } } },
-          },
+          '200': { description: 'Resultado del solver', content: jsonContent('SolveResponse') },
+          '400': { $ref: '#/components/responses/BadRequest' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '422': { $ref: '#/components/responses/Unprocessable' },
+          '500': { $ref: '#/components/responses/InternalServerError' },
         },
       },
     },
+
     '/sprints': {
       get: {
         tags: ['sprints'],
         summary: 'Listar sprints',
         security: [{ BearerAuth: [] }],
-        responses: { '200': { description: 'Lista de sprints' } },
+        responses: {
+          '200': { description: 'Lista de sprints', content: jsonContent('SprintListResponse') },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+        },
       },
       post: {
         tags: ['sprints'],
         summary: 'Crear sprint',
         security: [{ BearerAuth: [] }],
-        requestBody: { required: true, content: { 'application/json': { schema: { type: 'object' } } } },
-        responses: { '201': { description: 'Sprint creado' } },
+        requestBody: {
+          required: true,
+          content: jsonContent('CreateSprintRequest'),
+        },
+        responses: {
+          '201': { description: 'Sprint creado', content: jsonContent('Sprint') },
+          '400': { $ref: '#/components/responses/BadRequest' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '404': { $ref: '#/components/responses/NotFound' },
+        },
       },
     },
     '/sprints/{sprintId}': {
       get: {
         tags: ['sprints'],
-        summary: 'Obtener sprint',
+        summary: 'Obtener sprint por id',
         security: [{ BearerAuth: [] }],
         parameters: [{ name: 'sprintId', in: 'path', required: true, schema: { type: 'string' } }],
-        responses: { '200': { description: 'Sprint', content: { 'application/json': { schema: { $ref: '#/components/schemas/Sprint' } } } } },
+        responses: {
+          '200': { description: 'Sprint', content: jsonContent('Sprint') },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '404': { $ref: '#/components/responses/NotFound' },
+        },
       },
     },
     '/sprints/{sprintId}/global-config': {
       patch: {
         tags: ['sprints'],
-        summary: 'Actualizar configuracion global de sprint',
+        summary: 'Actualizar configuracion global del sprint',
         security: [{ BearerAuth: [] }],
         parameters: [{ name: 'sprintId', in: 'path', required: true, schema: { type: 'string' } }],
-        requestBody: { required: true, content: { 'application/json': { schema: { type: 'object' } } } },
-        responses: { '200': { description: 'Sprint actualizado' } },
+        requestBody: {
+          required: true,
+          content: jsonContent('UpdateSprintGlobalConfigRequest'),
+        },
+        responses: {
+          '200': { description: 'Sprint actualizado', content: jsonContent('Sprint') },
+          '400': { $ref: '#/components/responses/BadRequest' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '404': { $ref: '#/components/responses/NotFound' },
+        },
       },
     },
     '/sprints/{sprintId}/doctors': {
@@ -334,8 +720,19 @@ export const openApiDocument = {
         summary: 'Agregar medico a sprint',
         security: [{ BearerAuth: [] }],
         parameters: [{ name: 'sprintId', in: 'path', required: true, schema: { type: 'string' } }],
-        requestBody: { required: true, content: { 'application/json': { schema: { type: 'object' } } } },
-        responses: { '200': { description: 'Sprint actualizado' } },
+        requestBody: {
+          required: true,
+          content: jsonContent('AddSprintDoctorRequest'),
+        },
+        responses: {
+          '200': { description: 'Sprint actualizado', content: jsonContent('Sprint') },
+          '400': { $ref: '#/components/responses/BadRequest' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '404': { $ref: '#/components/responses/NotFound' },
+          '409': { $ref: '#/components/responses/Conflict' },
+          '422': { $ref: '#/components/responses/Unprocessable' },
+        },
       },
     },
     '/sprints/{sprintId}/doctors/{doctorId}': {
@@ -347,29 +744,52 @@ export const openApiDocument = {
           { name: 'sprintId', in: 'path', required: true, schema: { type: 'string' } },
           { name: 'doctorId', in: 'path', required: true, schema: { type: 'string' } },
         ],
-        responses: { '200': { description: 'Sprint actualizado' } },
+        responses: {
+          '200': { description: 'Sprint actualizado', content: jsonContent('Sprint') },
+          '400': { $ref: '#/components/responses/BadRequest' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '404': { $ref: '#/components/responses/NotFound' },
+          '422': { $ref: '#/components/responses/Unprocessable' },
+        },
       },
     },
+
     '/sprints/{sprintId}/availability': {
       get: {
         tags: ['availability'],
-        summary: 'Listar disponibilidad cargada del sprint',
+        summary: 'Listar disponibilidad del sprint',
         security: [{ BearerAuth: [] }],
         parameters: [{ name: 'sprintId', in: 'path', required: true, schema: { type: 'string' } }],
-        responses: { '200': { description: 'Disponibilidad' } },
+        responses: {
+          '200': { description: 'Disponibilidad', content: jsonContent('SprintAvailabilityListResponse') },
+          '400': { $ref: '#/components/responses/BadRequest' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '404': { $ref: '#/components/responses/NotFound' },
+        },
       },
     },
     '/sprints/{sprintId}/doctors/{doctorId}/availability': {
       put: {
         tags: ['availability'],
-        summary: 'Autogestion de disponibilidad del medico',
+        summary: 'Autogestion de disponibilidad por medico',
         security: [{ BearerAuth: [] }],
         parameters: [
           { name: 'sprintId', in: 'path', required: true, schema: { type: 'string' } },
           { name: 'doctorId', in: 'path', required: true, schema: { type: 'string' } },
         ],
-        requestBody: { required: true, content: { 'application/json': { schema: { type: 'object' } } } },
-        responses: { '200': { description: 'Disponibilidad actualizada' } },
+        requestBody: {
+          required: true,
+          content: jsonContent('SetDoctorAvailabilityRequest'),
+        },
+        responses: {
+          '200': { description: 'Sprint actualizado', content: jsonContent('Sprint') },
+          '400': { $ref: '#/components/responses/BadRequest' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '404': { $ref: '#/components/responses/NotFound' },
+        },
       },
     },
     '/sprints/{sprintId}/availability/override': {
@@ -378,18 +798,38 @@ export const openApiDocument = {
         summary: 'Override de disponibilidad por planner',
         security: [{ BearerAuth: [] }],
         parameters: [{ name: 'sprintId', in: 'path', required: true, schema: { type: 'string' } }],
-        requestBody: { required: true, content: { 'application/json': { schema: { type: 'object' } } } },
-        responses: { '200': { description: 'Disponibilidad actualizada' } },
+        requestBody: {
+          required: true,
+          content: jsonContent('PlannerOverrideAvailabilityRequest'),
+        },
+        responses: {
+          '200': { description: 'Sprint actualizado', content: jsonContent('Sprint') },
+          '400': { $ref: '#/components/responses/BadRequest' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '404': { $ref: '#/components/responses/NotFound' },
+        },
       },
     },
+
     '/sprints/{sprintId}/status': {
       patch: {
         tags: ['runs'],
-        summary: 'Marcar sprint ready-to-solve',
+        summary: 'Marcar sprint como ready-to-solve',
         security: [{ BearerAuth: [] }],
         parameters: [{ name: 'sprintId', in: 'path', required: true, schema: { type: 'string' } }],
-        requestBody: { required: true, content: { 'application/json': { schema: { type: 'object' } } } },
-        responses: { '200': { description: 'Estado actualizado' } },
+        requestBody: {
+          required: true,
+          content: jsonContent('MarkSprintReadyRequest'),
+        },
+        responses: {
+          '200': { description: 'Sprint actualizado', content: jsonContent('Sprint') },
+          '400': { $ref: '#/components/responses/BadRequest' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '404': { $ref: '#/components/responses/NotFound' },
+          '422': { $ref: '#/components/responses/Unprocessable' },
+        },
       },
     },
     '/sprints/{sprintId}/runs': {
@@ -398,15 +838,32 @@ export const openApiDocument = {
         summary: 'Ejecutar solver para sprint',
         security: [{ BearerAuth: [] }],
         parameters: [{ name: 'sprintId', in: 'path', required: true, schema: { type: 'string' } }],
-        requestBody: { required: true, content: { 'application/json': { schema: { type: 'object' } } } },
-        responses: { '201': { description: 'Corrida creada', content: { 'application/json': { schema: { $ref: '#/components/schemas/SprintRun' } } } } },
+        requestBody: {
+          required: true,
+          content: jsonContent('RunSprintSolveRequest'),
+        },
+        responses: {
+          '200': { description: 'Corrida ejecutada', content: jsonContent('RunSprintSolveResponse') },
+          '400': { $ref: '#/components/responses/BadRequest' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '404': { $ref: '#/components/responses/NotFound' },
+          '422': { $ref: '#/components/responses/Unprocessable' },
+          '500': { $ref: '#/components/responses/InternalServerError' },
+        },
       },
       get: {
         tags: ['runs'],
         summary: 'Historial de corridas por sprint',
         security: [{ BearerAuth: [] }],
         parameters: [{ name: 'sprintId', in: 'path', required: true, schema: { type: 'string' } }],
-        responses: { '200': { description: 'Listado de corridas' } },
+        responses: {
+          '200': { description: 'Historial de corridas', content: jsonContent('SprintRunListResponse') },
+          '400': { $ref: '#/components/responses/BadRequest' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '404': { $ref: '#/components/responses/NotFound' },
+        },
       },
     },
   },
