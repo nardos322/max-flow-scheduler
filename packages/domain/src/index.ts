@@ -382,9 +382,7 @@ export const markSprintReadyRequestSchema = z.object({
   status: z.literal('ready-to-solve'),
 });
 
-export const runSprintSolveRequestSchema = z.object({
-  request: solveRequestSchema,
-});
+export const runSprintSolveRequestSchema = z.object({}).strict();
 
 export type SolveRequest = z.infer<typeof solveRequestSchema>;
 export type SolveResponse = z.infer<typeof solveResponseSchema>;

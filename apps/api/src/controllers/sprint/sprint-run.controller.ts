@@ -2,11 +2,15 @@ import type { RequestHandler } from 'express';
 import { solveResponseSchema, type SolveRequest, type SolveResponse } from '@scheduler/domain';
 import { HttpError } from '../../errors/http.error.js';
 import { SolverError } from '../../errors/solver.error.js';
-import type { SprintRunLocals } from '../../middlewares/sprint/validate-sprint-run.middleware.js';
 import { mapEngineRunnerError } from '../../services/error-mapper.service.js';
 import { EngineRunnerError } from '../../services/engine-runner.service.js';
 import { solveScheduleWithEngine } from '../../services/solve-schedule.service.js';
-import { getSprintRunHistory, registerFailedSprintRun, registerSucceededSprintRun } from '../../services/sprint/sprint-run.service.js';
+import {
+  buildSolveRequestFromSprint,
+  getSprintRunHistory,
+  registerFailedSprintRun,
+  registerSucceededSprintRun,
+} from '../../services/sprint/sprint-run.service.js';
 import { findSprintOrNull } from '../../services/sprint/sprint.service.js';
 import { markSprintReadyToSolve, markSprintSolved } from '../../services/sprint/sprint-ready.service.js';
 
@@ -71,19 +75,41 @@ export function createRunSprintSolveController(solveForSprint: SolveForSprint): 
       return;
     }
 
-    const payload = (res.locals as SprintRunLocals).runSolveRequest;
-    if (!payload) {
-      next(new HttpError(500, { error: 'Run sprint solve payload not validated' }));
+    const buildResult = await buildSolveRequestFromSprint(sprintId);
+    if ('error' in buildResult) {
+      if (buildResult.error === 'PERIOD_NOT_FOUND') {
+        next(new HttpError(404, { error: 'Period not found for sprint' }));
+        return;
+      }
+
+      if (buildResult.error === 'DOCTOR_NOT_FOUND_OR_INACTIVE') {
+        next(new HttpError(422, { error: 'Sprint has missing or inactive doctors', details: buildResult.details ?? [] }));
+        return;
+      }
+
+      if (buildResult.error === 'NO_DOCTORS') {
+        next(new HttpError(422, { error: 'Sprint must include at least one doctor' }));
+        return;
+      }
+
+      if (buildResult.error === 'NO_AVAILABILITY') {
+        next(new HttpError(422, { error: 'Sprint must include doctor availability before solve' }));
+        return;
+      }
+
+      next(new HttpError(422, { error: 'Sprint data is not ready for solve' }));
       return;
     }
 
+    const solveRequest = buildResult.request;
+
     try {
-      const solverResponse = await solveForSprint(payload.request);
+      const solverResponse = await solveForSprint(solveRequest);
       const parsedResponse = solveResponseSchema.safeParse(solverResponse);
       if (!parsedResponse.success) {
         await registerFailedSprintRun(
           sprintId,
-          payload.request,
+          solveRequest,
           'INTERNAL_CONTRACT_MISMATCH',
           'Internal contract mismatch',
         );
@@ -91,7 +117,7 @@ export function createRunSprintSolveController(solveForSprint: SolveForSprint): 
         return;
       }
 
-      const run = await registerSucceededSprintRun(sprintId, payload.request, parsedResponse.data);
+      const run = await registerSucceededSprintRun(sprintId, solveRequest, parsedResponse.data);
       await markSprintSolved(sprintId);
 
       res.status(200).json({
@@ -101,13 +127,13 @@ export function createRunSprintSolveController(solveForSprint: SolveForSprint): 
     } catch (error) {
       if (error instanceof EngineRunnerError) {
         const mapped = mapEngineRunnerError(error);
-        await registerFailedSprintRun(sprintId, payload.request, mapped.code, mapped.message);
+        await registerFailedSprintRun(sprintId, solveRequest, mapped.code, mapped.message);
         next(mapped);
         return;
       }
 
       const fallback = new SolverError(500, 'UNEXPECTED_ERROR', 'Unexpected solver failure');
-      await registerFailedSprintRun(sprintId, payload.request, fallback.code, fallback.message);
+      await registerFailedSprintRun(sprintId, solveRequest, fallback.code, fallback.message);
       next(fallback);
     }
   };

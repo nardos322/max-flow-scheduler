@@ -272,15 +272,7 @@ describe('sprint schemas', () => {
   });
 
   it('accepts run sprint solve payload', () => {
-    const result = runSprintSolveRequestSchema.safeParse({
-      request: {
-        contractVersion: '1.0',
-        doctors: [{ id: 'd1', maxTotalDays: 2 }],
-        periods: [{ id: 'p1', dayIds: ['day-1'] }],
-        demands: [{ dayId: 'day-1', requiredDoctors: 1 }],
-        availability: [{ doctorId: 'd1', periodId: 'p1', dayId: 'day-1' }],
-      },
-    });
+    const result = runSprintSolveRequestSchema.safeParse({});
 
     expect(result.success).toBe(true);
   });

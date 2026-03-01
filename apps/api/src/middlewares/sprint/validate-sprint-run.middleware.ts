@@ -3,13 +3,11 @@ import {
   markSprintReadyRequestSchema,
   runSprintSolveRequestSchema,
   type MarkSprintReadyRequest,
-  type RunSprintSolveRequest,
 } from '@scheduler/domain';
 import { HttpError } from '../../errors/http.error.js';
 
 export type SprintRunLocals = {
   markReadyRequest?: MarkSprintReadyRequest;
-  runSolveRequest?: RunSprintSolveRequest;
 };
 
 function mapIssues(issues: Array<{ path: (string | number)[]; message: string }>) {
@@ -31,12 +29,12 @@ export const validateMarkSprintReadyMiddleware: RequestHandler = (req, res, next
 };
 
 export const validateRunSprintSolveMiddleware: RequestHandler = (req, res, next) => {
-  const parsed = runSprintSolveRequestSchema.safeParse(req.body);
+  const parsed = runSprintSolveRequestSchema.safeParse(req.body ?? {});
   if (!parsed.success) {
     next(new HttpError(400, { error: 'Invalid sprint solve payload', issues: mapIssues(parsed.error.issues) }));
     return;
   }
 
-  (res.locals as SprintRunLocals).runSolveRequest = parsed.data;
+  void res;
   next();
 };

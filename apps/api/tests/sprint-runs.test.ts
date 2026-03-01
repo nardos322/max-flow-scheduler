@@ -11,6 +11,7 @@ import { validateCreateSprintMiddleware } from '../src/middlewares/sprint/valida
 import { clearDoctorStore, createDoctor } from '../src/services/doctor/doctor.repository.js';
 import { clearPeriodStore, createPeriod } from '../src/services/period/period.repository.js';
 import { clearSprintStore } from '../src/services/sprint/sprint.repository.js';
+import { updateDoctorAvailability } from '../src/services/sprint/sprint.service.js';
 import { clearSprintRunStore } from '../src/services/sprint/sprint-run.repository.js';
 
 describe('sprint run controllers', () => {
@@ -53,15 +54,7 @@ describe('sprint run controllers', () => {
     }
     const created = createdCall[0] as { id: string };
 
-    const solveRes = { status: vi.fn().mockReturnThis(), json: vi.fn(), locals: { runSolveRequest: {
-      request: {
-        contractVersion: '1.0',
-        doctors: [{ id: 'd1', maxTotalDays: 1 }],
-        periods: [{ id: 'p1', dayIds: ['day-1'] }],
-        demands: [{ dayId: 'day-1', requiredDoctors: 1 }],
-        availability: [{ doctorId: 'd1', periodId: 'p1', dayId: 'day-1' }],
-      },
-    } } };
+    const solveRes = { status: vi.fn().mockReturnThis(), json: vi.fn(), locals: {} };
 
     await runSprintSolveController({ params: { sprintId: created.id } } as never, solveRes as never, next);
 
@@ -104,28 +97,21 @@ describe('sprint run controllers', () => {
     await markSprintReadyController({ params: { sprintId: created.id } } as never, markReadyRes as never, next);
     expect(markReadyRes.status).toHaveBeenCalledWith(200);
 
-    const solveRes = {
-      status: vi.fn().mockReturnThis(),
-      json: vi.fn(),
-      locals: {
-        runSolveRequest: {
-          request: {
-            contractVersion: '1.0',
-            doctors: [{ id: 'd1', maxTotalDays: 1 }],
-            periods: [{ id: 'p1', dayIds: ['day-1'] }],
-            demands: [{ dayId: 'day-1', requiredDoctors: 1 }],
-            availability: [{ doctorId: 'd1', periodId: 'p1', dayId: 'day-1' }],
-          },
-        },
-      },
-    };
+    await updateDoctorAvailability(
+      created.id,
+      doctor.id,
+      [{ periodId: period.id, dayId: '2026-06-01' }],
+      { role: 'planner', userId: 'planner-1' },
+    );
+
+    const solveRes = { status: vi.fn().mockReturnThis(), json: vi.fn(), locals: {} };
 
     const runSolveWithSuccess = createRunSprintSolveController(async () => ({
       contractVersion: '1.0',
       isFeasible: true,
       assignedCount: 1,
       uncoveredDays: [],
-      assignments: [{ doctorId: 'd1', dayId: 'day-1', periodId: 'p1' }],
+      assignments: [{ doctorId: doctor.id, dayId: '2026-06-01', periodId: period.id }],
     }));
 
     await runSolveWithSuccess({ params: { sprintId: created.id } } as never, solveRes as never, next);
@@ -182,28 +168,21 @@ describe('sprint run controllers', () => {
     const markReadyRes = { status: vi.fn().mockReturnThis(), json: vi.fn(), locals: { markReadyRequest: { status: 'ready-to-solve' } } };
     await markSprintReadyController({ params: { sprintId: created.id } } as never, markReadyRes as never, next);
 
-    const solveRes = {
-      status: vi.fn().mockReturnThis(),
-      json: vi.fn(),
-      locals: {
-        runSolveRequest: {
-          request: {
-            contractVersion: '1.0',
-            doctors: [{ id: 'd1', maxTotalDays: 1 }],
-            periods: [{ id: 'p1', dayIds: ['day-1'] }],
-            demands: [{ dayId: 'day-1', requiredDoctors: 1 }],
-            availability: [{ doctorId: 'd1', periodId: 'p1', dayId: 'day-1' }],
-          },
-        },
-      },
-    };
+    await updateDoctorAvailability(
+      created.id,
+      doctor.id,
+      [{ periodId: period.id, dayId: '2026-07-01' }],
+      { role: 'planner', userId: 'planner-1' },
+    );
+
+    const solveRes = { status: vi.fn().mockReturnThis(), json: vi.fn(), locals: {} };
 
     const runSolveWithInvalidContract = createRunSprintSolveController(async () =>
       ({
         contractVersion: '1.0',
         isFeasible: true,
         uncoveredDays: [],
-        assignments: [{ doctorId: 'd1', dayId: 'day-1', periodId: 'p1' }],
+        assignments: [{ doctorId: doctor.id, dayId: '2026-07-01', periodId: period.id }],
       }) as unknown as SolveResponse,
     );
 
