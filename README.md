@@ -45,6 +45,20 @@ Monorepo para planificacion de medicos en vacaciones usando un solver de max-flo
   - `DATABASE_URL="file:./dev.db"`
   - Alternativa: copiar `apps/api/.env.example` a `apps/api/.env`
 
+## Perfiles de auth (API)
+- `dev` (MVP local):
+  - `cp apps/api/.env.development.example apps/api/.env`
+  - Usa `JWT_SECRET` (HS256) sin dependencia externa.
+- `staging` (integracion con IdP):
+  - `cp apps/api/.env.staging.example apps/api/.env`
+  - Usa `JWT_JWKS_URL` (RS256/JWKS).
+- `prod` (recomendado):
+  - `cp apps/api/.env.production.example apps/api/.env`
+  - Usa `JWT_JWKS_URL` y rotacion de claves del IdP.
+- Prioridad de verificacion JWT en runtime:
+  - `JWT_JWKS_URL` -> `JWT_PUBLIC_KEY` -> `JWT_SECRET`
+- La API valida config de auth al arrancar (fail-fast) y corta startup si falta configuracion requerida.
+
 ## Hardening API (MVP)
 - Headers de seguridad por defecto en todas las respuestas.
 - Rate limit in-memory configurable:
