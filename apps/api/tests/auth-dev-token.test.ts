@@ -5,6 +5,7 @@ import { validateIssueDevTokenMiddleware } from '../src/middlewares/auth/validat
 
 describe('dev token bootstrap', () => {
   beforeEach(() => {
+    process.env.NODE_ENV = 'test';
     process.env.JWT_SECRET = 'dev-secret';
     process.env.JWT_ISSUER = 'scheduler-auth-dev';
     process.env.JWT_AUDIENCE = 'scheduler-api';
@@ -55,6 +56,19 @@ describe('dev token bootstrap', () => {
         message: 'Dev token issuance requires shared-secret auth mode (JWT_SECRET)',
       }),
     );
+  });
+
+  it('returns 404 when NODE_ENV is production', async () => {
+    process.env.NODE_ENV = 'production';
+    const next = vi.fn();
+
+    await issueDevTokenController(
+      {} as never,
+      { locals: { issueDevTokenRequest: { userId: 'planner-1', role: 'planner' } } } as never,
+      next,
+    );
+
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 404, message: 'Route not found' }));
   });
 
   it('issues valid HS256 JWT for planner', async () => {

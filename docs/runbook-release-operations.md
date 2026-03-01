@@ -19,6 +19,10 @@ pnpm bench:engine-cpp
 pnpm bench:engine-cpp:check
 ```
 3. Confirm changelog updated: `CHANGELOG.md`.
+4. Confirm auth production config:
+   - `JWT_JWKS_URL`, `JWT_ISSUER`, `JWT_AUDIENCE` definidos.
+   - `AUTH_DEV_TOKEN_ENABLED=false`.
+   - referencia: `docs/auth-oidc-jwks-operations.md`.
 
 ## 2. Build and run locally with Docker
 ```bash

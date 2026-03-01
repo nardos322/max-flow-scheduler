@@ -5,6 +5,10 @@ import { resolveAuthRuntimeConfig } from '../../config/auth-config.js';
 import type { DevTokenLocals } from '../../middlewares/auth/validate-dev-token.middleware.js';
 
 function isDevTokenIssuanceEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+  if (env.NODE_ENV?.trim().toLowerCase() === 'production') {
+    return false;
+  }
+
   const flag = env.AUTH_DEV_TOKEN_ENABLED?.trim().toLowerCase();
   return flag === '1' || flag === 'true' || flag === 'yes';
 }

@@ -13,6 +13,7 @@ describe('resolveActorMiddleware', () => {
     process.env.JWT_SECRET = 'test-secret';
     delete process.env.JWT_PUBLIC_KEY;
     delete process.env.JWT_JWKS_URL;
+    delete process.env.AUTH_ROLE_CLAIM_PATHS;
     process.env.JWT_ISSUER = 'scheduler-api-tests';
     process.env.JWT_AUDIENCE = 'scheduler-api';
   });
@@ -90,6 +91,88 @@ describe('resolveActorMiddleware', () => {
 
     expect(next).toHaveBeenCalledWith();
     expect(res.locals).toEqual({ actor: { role: 'doctor', userId: 'doctor-1' } });
+  });
+
+  it('resolves actor role from roles array claim', async () => {
+    const token = signTestJwt(
+      {
+        sub: 'planner-roles-array',
+        roles: ['planner'],
+        iss: 'scheduler-api-tests',
+        aud: 'scheduler-api',
+        exp: Math.floor(Date.now() / 1000) + 3600,
+      },
+      'test-secret',
+    );
+
+    const next = vi.fn();
+    const res = { locals: {} };
+
+    await resolveActorMiddleware(
+      { headers: { authorization: `Bearer ${token}` } } as never,
+      res as never,
+      next,
+    );
+
+    expect(next).toHaveBeenCalledWith();
+    expect(res.locals).toEqual({ actor: { role: 'planner', userId: 'planner-roles-array' } });
+  });
+
+  it('resolves actor role from nested realm_access.roles claim', async () => {
+    const token = signTestJwt(
+      {
+        sub: 'doctor-realm',
+        realm_access: {
+          roles: ['doctor'],
+        },
+        iss: 'scheduler-api-tests',
+        aud: 'scheduler-api',
+        exp: Math.floor(Date.now() / 1000) + 3600,
+      },
+      'test-secret',
+    );
+
+    const next = vi.fn();
+    const res = { locals: {} };
+
+    await resolveActorMiddleware(
+      { headers: { authorization: `Bearer ${token}` } } as never,
+      res as never,
+      next,
+    );
+
+    expect(next).toHaveBeenCalledWith();
+    expect(res.locals).toEqual({ actor: { role: 'doctor', userId: 'doctor-realm' } });
+  });
+
+  it('uses AUTH_ROLE_CLAIM_PATHS to resolve custom nested role claim', async () => {
+    process.env.AUTH_ROLE_CLAIM_PATHS = 'custom.claim.role';
+    const token = signTestJwt(
+      {
+        sub: 'planner-custom-claim',
+        custom: {
+          claim: {
+            role: 'planner',
+          },
+        },
+        iss: 'scheduler-api-tests',
+        aud: 'scheduler-api',
+        exp: Math.floor(Date.now() / 1000) + 3600,
+      },
+      'test-secret',
+    );
+
+    const next = vi.fn();
+    const res = { locals: {} };
+
+    await resolveActorMiddleware(
+      { headers: { authorization: `Bearer ${token}` } } as never,
+      res as never,
+      next,
+    );
+
+    expect(next).toHaveBeenCalledWith();
+    expect(res.locals).toEqual({ actor: { role: 'planner', userId: 'planner-custom-claim' } });
   });
 
   it('resolves actor from valid RS256 token when JWT_PUBLIC_KEY is configured', async () => {
