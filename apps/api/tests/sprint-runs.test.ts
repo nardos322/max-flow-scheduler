@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { SolveResponse } from '@scheduler/domain';
 import {
   createRunSprintSolveController,
   listSprintRunsController,
@@ -172,12 +173,14 @@ describe('sprint run controllers', () => {
       },
     };
 
-    const runSolveWithInvalidContract = createRunSprintSolveController(async () => ({
-      contractVersion: '1.0',
-      isFeasible: true,
-      uncoveredDays: [],
-      assignments: [{ doctorId: 'd1', dayId: 'day-1', periodId: 'p1' }],
-    }));
+    const runSolveWithInvalidContract = createRunSprintSolveController(async () =>
+      ({
+        contractVersion: '1.0',
+        isFeasible: true,
+        uncoveredDays: [],
+        assignments: [{ doctorId: 'd1', dayId: 'day-1', periodId: 'p1' }],
+      }) as unknown as SolveResponse,
+    );
 
     await runSolveWithInvalidContract({ params: { sprintId: created.id } } as never, solveRes as never, next);
 

@@ -38,6 +38,18 @@ Monorepo para planificacion de medicos en vacaciones usando un solver de max-flo
   - `DATABASE_URL="file:./dev.db"`
   - Alternativa: copiar `apps/api/.env.example` a `apps/api/.env`
 
+## Hardening API (MVP)
+- Headers de seguridad por defecto en todas las respuestas.
+- Rate limit in-memory configurable:
+  - `API_RATE_LIMIT_WINDOW_MS` (default `60000`)
+  - `API_RATE_LIMIT_MAX_REQUESTS` (default `120`)
+- Limite de body JSON configurable:
+  - `API_BODY_LIMIT` (default `100kb`)
+- Sanitizacion de errores:
+  - `413` para payload demasiado grande
+  - `400` para JSON mal formado
+  - `5xx` sin detalles internos del solver
+
 ## Nota MVP
 - Integracion API -> engine via CLI (`stdin/stdout`).
 - Autenticacion JWT basica en endpoints de disponibilidad.

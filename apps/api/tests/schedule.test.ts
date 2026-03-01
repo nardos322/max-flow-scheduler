@@ -3,6 +3,7 @@ import { EngineRunnerError } from '../src/services/engine-runner.service.js';
 import { createSolveScheduleController } from '../src/controllers/schedule.controller.js';
 import { validateSolveRequestMiddleware } from '../src/middlewares/validate-solve-request.middleware.js';
 import { SolverError } from '../src/errors/solver.error.js';
+import type { SolveResponse } from '@scheduler/domain';
 
 describe('validateSolveRequestMiddleware', () => {
   it('rejects invalid payloads with field issues', async () => {
@@ -107,12 +108,14 @@ describe('solveScheduleController', () => {
     const json = vi.fn();
     const next = vi.fn();
     const res = { status, json, locals: { solveRequest: {} } };
-    const solveScheduleController = createSolveScheduleController(async () => ({
-      contractVersion: '1.0',
-      isFeasible: true,
-      uncoveredDays: [],
-      assignments: [{ doctorId: 'd1', dayId: 'day-1', periodId: 'p1' }],
-    }));
+    const solveScheduleController = createSolveScheduleController(async () =>
+      ({
+        contractVersion: '1.0',
+        isFeasible: true,
+        uncoveredDays: [],
+        assignments: [{ doctorId: 'd1', dayId: 'day-1', periodId: 'p1' }],
+      }) as unknown as SolveResponse,
+    );
 
     await solveScheduleController({} as never, res as never, next);
 
