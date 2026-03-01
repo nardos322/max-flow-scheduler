@@ -61,6 +61,45 @@ describe('sprint run controllers', () => {
     expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 422 }));
   });
 
+  it('rejects mark-ready when sprint has no availability', async () => {
+    const doctor = await createDoctor({ name: 'Dr. Uno', active: true, maxTotalDaysDefault: 8 });
+    const period = await createPeriod({
+      name: 'Mayo 2026',
+      startsOn: '2026-05-01',
+      endsOn: '2026-05-31',
+      demands: [{ dayId: '2026-05-01', requiredDoctors: 1 }],
+    });
+
+    const next = vi.fn();
+    const createRes = { status: vi.fn().mockReturnThis(), json: vi.fn(), locals: {} };
+
+    await validateCreateSprintMiddleware(
+      {
+        body: {
+          name: 'Guardias Mayo Sin Disponibilidad',
+          periodId: period.id,
+          globalConfig: { requiredDoctorsPerShift: 1, maxDaysPerDoctorDefault: 8 },
+          doctorIds: [doctor.id],
+        },
+      } as never,
+      createRes as never,
+      next,
+    );
+    await createSprintController({} as never, createRes as never, next);
+
+    const createdCall = createRes.json.mock.calls[0];
+    if (!createdCall) {
+      throw new Error('Expected sprint create response');
+    }
+    const created = createdCall[0] as { id: string };
+
+    const markReadyRes = { status: vi.fn().mockReturnThis(), json: vi.fn(), locals: { markReadyRequest: { status: 'ready-to-solve' } } };
+    await markSprintReadyController({ params: { sprintId: created.id } } as never, markReadyRes as never, next);
+
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 422 }));
+    expect(markReadyRes.status).not.toHaveBeenCalled();
+  });
+
   it('marks sprint ready, runs solve, and stores run history', async () => {
     const doctor = await createDoctor({ name: 'Dr. Uno', active: true, maxTotalDaysDefault: 8 });
     const period = await createPeriod({
@@ -93,16 +132,16 @@ describe('sprint run controllers', () => {
     }
     const created = createdCall[0] as { id: string };
 
-    const markReadyRes = { status: vi.fn().mockReturnThis(), json: vi.fn(), locals: { markReadyRequest: { status: 'ready-to-solve' } } };
-    await markSprintReadyController({ params: { sprintId: created.id } } as never, markReadyRes as never, next);
-    expect(markReadyRes.status).toHaveBeenCalledWith(200);
-
     await updateDoctorAvailability(
       created.id,
       doctor.id,
       [{ periodId: period.id, dayId: '2026-06-01' }],
       { role: 'planner', userId: 'planner-1' },
     );
+
+    const markReadyRes = { status: vi.fn().mockReturnThis(), json: vi.fn(), locals: { markReadyRequest: { status: 'ready-to-solve' } } };
+    await markSprintReadyController({ params: { sprintId: created.id } } as never, markReadyRes as never, next);
+    expect(markReadyRes.status).toHaveBeenCalledWith(200);
 
     const solveRes = { status: vi.fn().mockReturnThis(), json: vi.fn(), locals: {} };
 
@@ -165,15 +204,15 @@ describe('sprint run controllers', () => {
     }
     const created = createdCall[0] as { id: string };
 
-    const markReadyRes = { status: vi.fn().mockReturnThis(), json: vi.fn(), locals: { markReadyRequest: { status: 'ready-to-solve' } } };
-    await markSprintReadyController({ params: { sprintId: created.id } } as never, markReadyRes as never, next);
-
     await updateDoctorAvailability(
       created.id,
       doctor.id,
       [{ periodId: period.id, dayId: '2026-07-01' }],
       { role: 'planner', userId: 'planner-1' },
     );
+
+    const markReadyRes = { status: vi.fn().mockReturnThis(), json: vi.fn(), locals: { markReadyRequest: { status: 'ready-to-solve' } } };
+    await markSprintReadyController({ params: { sprintId: created.id } } as never, markReadyRes as never, next);
 
     const solveRes = { status: vi.fn().mockReturnThis(), json: vi.fn(), locals: {} };
 
