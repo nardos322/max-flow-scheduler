@@ -26,6 +26,6 @@ Mantener CI deterministico y detectar flakes temprano, con foco en pruebas criti
 
 ## Comandos
 - Generar baseline:
-  - `pnpm bench:web-tests`
+  - `pnpm bench:web-tests` (incluye 1 corrida de warmup, sin enforcement)
 - Ejecutar check de estabilidad:
-  - `pnpm test:web:stability`
+  - `pnpm test:web:stability` (mide p95 sobre corridas post-warmup)

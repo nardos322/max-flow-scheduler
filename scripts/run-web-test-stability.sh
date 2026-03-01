@@ -2,6 +2,7 @@
 set -euo pipefail
 
 RUNS=3
+WARMUP_RUNS=1
 BUDGET_FILE=""
 OUTPUT_FILE=""
 ENFORCE_BUDGETS=1
@@ -10,6 +11,10 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --runs|-n)
       RUNS="$2"
+      shift 2
+      ;;
+    --warmup-runs)
+      WARMUP_RUNS="$2"
       shift 2
       ;;
     --budget)
@@ -35,6 +40,10 @@ if ! [[ "$RUNS" =~ ^[0-9]+$ ]] || [[ "$RUNS" -le 0 ]]; then
   echo "Invalid --runs value: $RUNS" >&2
   exit 2
 fi
+if ! [[ "$WARMUP_RUNS" =~ ^[0-9]+$ ]]; then
+  echo "Invalid --warmup-runs value: $WARMUP_RUNS" >&2
+  exit 2
+fi
 
 MIN_RUNS=3
 MAX_FAILED_RUNS=0
@@ -52,7 +61,8 @@ declare -a TIMES_MS=()
 declare -a STATUSES=()
 FAILED_RUNS=0
 
-for ((i=1; i<=RUNS; i++)); do
+TOTAL_RUNS=$((RUNS + WARMUP_RUNS))
+for ((i=1; i<=TOTAL_RUNS; i++)); do
   START_MS="$(date +%s%3N)"
   if pnpm --filter @scheduler/web test >/tmp/web-test-stability-run-"$i".log 2>&1; then
     STATUS=0
@@ -62,10 +72,20 @@ for ((i=1; i<=RUNS; i++)); do
   fi
   END_MS="$(date +%s%3N)"
   ELAPSED_MS=$((END_MS - START_MS))
-  TIMES_MS+=("$ELAPSED_MS")
-  STATUSES+=("$STATUS")
+  IS_WARMUP=0
+  if [[ "$i" -le "$WARMUP_RUNS" ]]; then
+    IS_WARMUP=1
+  else
+    TIMES_MS+=("$ELAPSED_MS")
+    STATUSES+=("$STATUS")
+  fi
 
-  echo "Run $i/$RUNS: ${ELAPSED_MS}ms (status=$STATUS)"
+  if [[ "$IS_WARMUP" -eq 1 ]]; then
+    echo "Warmup $i/$WARMUP_RUNS: ${ELAPSED_MS}ms (status=$STATUS)"
+  else
+    MEASURED_INDEX=$((i - WARMUP_RUNS))
+    echo "Run $MEASURED_INDEX/$RUNS: ${ELAPSED_MS}ms (status=$STATUS)"
+  fi
   if [[ "$STATUS" -ne 0 ]]; then
     cat /tmp/web-test-stability-run-"$i".log
   fi
@@ -82,7 +102,7 @@ if [[ "$P95_IDX" -lt 1 ]]; then P95_IDX=1; fi
 if [[ "$P95_IDX" -gt "$RUNS" ]]; then P95_IDX="$RUNS"; fi
 P95_MS="$(printf "%s\n" "$SORTED" | sed -n "${P95_IDX}p")"
 
-echo "Summary: runs=$RUNS failedRuns=$FAILED_RUNS min=${MIN_MS}ms max=${MAX_MS}ms avg=${AVG_MS}ms p50=${P50_MS}ms p95=${P95_MS}ms"
+echo "Summary: warmupRuns=$WARMUP_RUNS runs=$RUNS failedRuns=$FAILED_RUNS min=${MIN_MS}ms max=${MAX_MS}ms avg=${AVG_MS}ms p50=${P50_MS}ms p95=${P95_MS}ms"
 
 if [[ -n "$OUTPUT_FILE" ]]; then
   {
@@ -91,6 +111,7 @@ if [[ -n "$OUTPUT_FILE" ]]; then
     printf "  \"generatedAt\": \"%s\",\n" "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
     printf "  \"command\": \"pnpm --filter @scheduler/web test\",\n"
     printf "  \"metrics\": {\n"
+    printf "    \"warmupRuns\": %s,\n" "$WARMUP_RUNS"
     printf "    \"runs\": %s,\n" "$RUNS"
     printf "    \"minMs\": %s,\n" "$MIN_MS"
     printf "    \"maxMs\": %s,\n" "$MAX_MS"
