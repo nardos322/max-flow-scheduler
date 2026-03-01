@@ -7,11 +7,90 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Bootstrap table to validate DB wiring before domain models are migrated.
-model BootstrapState {
-  id        Int      @id
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum SprintStatus {
+  draft
+  ready_to_solve
+  solved
+}
 
-  @@map("bootstrap_state")
+enum UserRole {
+  doctor
+  planner
+}
+
+enum SprintAvailabilitySource {
+  doctor_self_service
+  planner_override
+}
+
+enum RunStatus {
+  succeeded
+  failed
+}
+
+model Sprint {
+  id                       String              @id
+  name                     String
+  startsOn                 String
+  endsOn                   String
+  status                   SprintStatus
+  requiredDoctorsPerShift  Int
+  maxDaysPerDoctorDefault  Int
+  createdAt                DateTime            @default(now())
+  updatedAt                DateTime            @updatedAt
+  doctors                  SprintDoctor[]
+  availabilityEntries      SprintAvailability[]
+  runs                     SprintRun[]
+
+  @@map("sprints")
+  @@index([status], map: "idx_sprints_status")
+  @@index([startsOn, endsOn], map: "idx_sprints_date_range")
+}
+
+model SprintDoctor {
+  id                    String   @id
+  sprintId              String
+  doctorId              String
+  maxTotalDaysOverride  Int?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  sprint                Sprint   @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+
+  @@map("sprint_doctors")
+  @@unique([sprintId, doctorId], map: "uq_sprint_doctors_sprint_doctor")
+  @@index([sprintId], map: "idx_sprint_doctors_sprint_id")
+}
+
+model SprintAvailability {
+  id              String                   @id
+  sprintId        String
+  doctorId        String
+  periodId        String
+  dayId           String
+  source          SprintAvailabilitySource
+  updatedByUserId String
+  updatedByRole   UserRole
+  updatedAt       DateTime
+  sprint          Sprint                   @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+
+  @@map("sprint_availability")
+  @@unique([sprintId, doctorId, periodId, dayId], map: "uq_sprint_availability_entry")
+  @@index([sprintId], map: "idx_sprint_availability_sprint_id")
+  @@index([sprintId, doctorId], map: "idx_sprint_availability_sprint_doctor")
+  @@index([sprintId, periodId, dayId], map: "idx_sprint_availability_sprint_period_day")
+}
+
+model SprintRun {
+  id             String   @id
+  sprintId       String
+  executedAt     DateTime @default(now())
+  status         RunStatus
+  inputSnapshot  Json
+  outputSnapshot Json?
+  errorCode      String?
+  errorMessage   String?
+  sprint         Sprint   @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+
+  @@map("sprint_runs")
+  @@index([sprintId, executedAt], map: "idx_sprint_runs_sprint_executed_at")
 }
