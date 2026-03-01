@@ -12,36 +12,44 @@ import { markSprintReadyToSolve, markSprintSolved } from '../../services/sprint/
 
 type SolveForSprint = (request: SolveRequest) => Promise<SolveResponse>;
 
-export const markSprintReadyController: RequestHandler = (req, res, next) => {
-  const sprintId = req.params.sprintId;
-  if (!sprintId) {
-    next(new HttpError(400, { error: 'Missing sprintId route param' }));
-    return;
-  }
+export const markSprintReadyController: RequestHandler = async (req, res, next) => {
+  try {
+    const sprintId = req.params.sprintId;
+    if (!sprintId) {
+      next(new HttpError(400, { error: 'Missing sprintId route param' }));
+      return;
+    }
 
-  const sprint = markSprintReadyToSolve(sprintId);
-  if (!sprint) {
-    next(new HttpError(404, { error: 'Sprint not found' }));
-    return;
-  }
+    const sprint = await markSprintReadyToSolve(sprintId);
+    if (!sprint) {
+      next(new HttpError(404, { error: 'Sprint not found' }));
+      return;
+    }
 
-  res.status(200).json(sprint);
+    res.status(200).json(sprint);
+  } catch (error) {
+    next(error);
+  }
 };
 
-export const listSprintRunsController: RequestHandler = (req, res, next) => {
-  const sprintId = req.params.sprintId;
-  if (!sprintId) {
-    next(new HttpError(400, { error: 'Missing sprintId route param' }));
-    return;
-  }
+export const listSprintRunsController: RequestHandler = async (req, res, next) => {
+  try {
+    const sprintId = req.params.sprintId;
+    if (!sprintId) {
+      next(new HttpError(400, { error: 'Missing sprintId route param' }));
+      return;
+    }
 
-  const sprint = findSprintOrNull(sprintId);
-  if (!sprint) {
-    next(new HttpError(404, { error: 'Sprint not found' }));
-    return;
-  }
+    const sprint = await findSprintOrNull(sprintId);
+    if (!sprint) {
+      next(new HttpError(404, { error: 'Sprint not found' }));
+      return;
+    }
 
-  res.status(200).json({ items: getSprintRunHistory(sprintId) });
+    res.status(200).json({ items: await getSprintRunHistory(sprintId) });
+  } catch (error) {
+    next(error);
+  }
 };
 
 export function createRunSprintSolveController(solveForSprint: SolveForSprint): RequestHandler {
@@ -52,7 +60,7 @@ export function createRunSprintSolveController(solveForSprint: SolveForSprint): 
       return;
     }
 
-    const sprint = findSprintOrNull(sprintId);
+    const sprint = await findSprintOrNull(sprintId);
     if (!sprint) {
       next(new HttpError(404, { error: 'Sprint not found' }));
       return;
@@ -71,8 +79,8 @@ export function createRunSprintSolveController(solveForSprint: SolveForSprint): 
 
     try {
       const solverResponse = await solveForSprint(payload.request);
-      const run = registerSucceededSprintRun(sprintId, payload.request, solverResponse);
-      markSprintSolved(sprintId);
+      const run = await registerSucceededSprintRun(sprintId, payload.request, solverResponse);
+      await markSprintSolved(sprintId);
 
       res.status(200).json({
         run,
@@ -81,13 +89,13 @@ export function createRunSprintSolveController(solveForSprint: SolveForSprint): 
     } catch (error) {
       if (error instanceof EngineRunnerError) {
         const mapped = mapEngineRunnerError(error);
-        registerFailedSprintRun(sprintId, payload.request, mapped.code, mapped.message);
+        await registerFailedSprintRun(sprintId, payload.request, mapped.code, mapped.message);
         next(mapped);
         return;
       }
 
       const fallback = new SolverError(500, 'UNEXPECTED_ERROR', 'Unexpected solver failure');
-      registerFailedSprintRun(sprintId, payload.request, fallback.code, fallback.message);
+      await registerFailedSprintRun(sprintId, payload.request, fallback.code, fallback.message);
       next(fallback);
     }
   };

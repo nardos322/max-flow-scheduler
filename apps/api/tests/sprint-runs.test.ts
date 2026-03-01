@@ -11,9 +11,9 @@ import { clearSprintStore } from '../src/services/sprint/sprint.repository.js';
 import { clearSprintRunStore } from '../src/services/sprint/sprint-run.repository.js';
 
 describe('sprint run controllers', () => {
-  beforeEach(() => {
-    clearSprintStore();
-    clearSprintRunStore();
+  beforeEach(async () => {
+    await clearSprintStore();
+    await clearSprintRunStore();
   });
 
   it('requires sprint to be ready before solving', async () => {

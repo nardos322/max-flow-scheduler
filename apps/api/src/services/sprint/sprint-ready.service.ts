@@ -1,8 +1,8 @@
 import type { Sprint } from '@scheduler/domain';
 import { getSprintById, saveSprint } from './sprint.repository.js';
 
-export function markSprintReadyToSolve(sprintId: string): Sprint | null {
-  const sprint = getSprintById(sprintId);
+export async function markSprintReadyToSolve(sprintId: string): Promise<Sprint | null> {
+  const sprint = await getSprintById(sprintId);
   if (!sprint) {
     return null;
   }
@@ -16,8 +16,8 @@ export function markSprintReadyToSolve(sprintId: string): Sprint | null {
   return saveSprint(updated);
 }
 
-export function markSprintSolved(sprintId: string): Sprint | null {
-  const sprint = getSprintById(sprintId);
+export async function markSprintSolved(sprintId: string): Promise<Sprint | null> {
+  const sprint = await getSprintById(sprintId);
   if (!sprint) {
     return null;
   }

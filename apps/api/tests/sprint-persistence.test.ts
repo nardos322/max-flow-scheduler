@@ -24,7 +24,7 @@ describe('sprint repository persistence', () => {
 
     const serviceModule = await import('../src/services/sprint/sprint.service.js');
 
-    const created = serviceModule.createSprint({
+    const created = await serviceModule.createSprint({
       name: 'Guardias Persistencia',
       startsOn: '2026-08-01',
       endsOn: '2026-08-31',
@@ -32,7 +32,7 @@ describe('sprint repository persistence', () => {
       doctors: [{ id: 'd1' }],
     });
 
-    serviceModule.updateSprintGlobalConfig(created.id, {
+    await serviceModule.updateSprintGlobalConfig(created.id, {
       requiredDoctorsPerShift: 3,
       maxDaysPerDoctorDefault: 9,
     });
@@ -40,7 +40,7 @@ describe('sprint repository persistence', () => {
     vi.resetModules();
 
     const reloadedModule = await import('../src/services/sprint/sprint.service.js');
-    const reloadedSprint = reloadedModule.findSprintOrNull(created.id);
+    const reloadedSprint = await reloadedModule.findSprintOrNull(created.id);
 
     expect(reloadedSprint).toEqual(
       expect.objectContaining({

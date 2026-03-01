@@ -12,7 +12,7 @@ function createSprintId(): string {
   return `spr-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function createSprint(payload: CreateSprintRequest): Sprint {
+export async function createSprint(payload: CreateSprintRequest): Promise<Sprint> {
   const timestamp = new Date().toISOString();
 
   const sprint: Sprint = {
@@ -31,16 +31,19 @@ export function createSprint(payload: CreateSprintRequest): Sprint {
   return saveSprint(sprint);
 }
 
-export function findSprintOrNull(sprintId: string): Sprint | null {
+export async function findSprintOrNull(sprintId: string): Promise<Sprint | null> {
   return getSprintById(sprintId);
 }
 
-export function getAllSprints(): Sprint[] {
+export async function getAllSprints(): Promise<Sprint[]> {
   return listSprints();
 }
 
-export function updateSprintGlobalConfig(sprintId: string, globalConfig: SprintGlobalConfig): Sprint | null {
-  const sprint = getSprintById(sprintId);
+export async function updateSprintGlobalConfig(
+  sprintId: string,
+  globalConfig: SprintGlobalConfig,
+): Promise<Sprint | null> {
+  const sprint = await getSprintById(sprintId);
   if (!sprint) {
     return null;
   }
@@ -58,13 +61,13 @@ export type UpdateDoctorAvailabilityResult =
   | { sprint: Sprint }
   | { error: 'SPRINT_NOT_FOUND' | 'DOCTOR_NOT_FOUND' };
 
-export function updateDoctorAvailability(
+export async function updateDoctorAvailability(
   sprintId: string,
   doctorId: string,
   days: AvailabilityDay[],
   actor: { role: UserRole; userId: string },
-): UpdateDoctorAvailabilityResult {
-  const sprint = getSprintById(sprintId);
+): Promise<UpdateDoctorAvailabilityResult> {
+  const sprint = await getSprintById(sprintId);
   if (!sprint) {
     return { error: 'SPRINT_NOT_FOUND' };
   }
@@ -94,11 +97,11 @@ export function updateDoctorAvailability(
     updatedAt,
   };
 
-  return { sprint: saveSprint(updated) };
+  return { sprint: await saveSprint(updated) };
 }
 
-export function getSprintAvailability(sprintId: string): SprintAvailabilityEntry[] | null {
-  const sprint = getSprintById(sprintId);
+export async function getSprintAvailability(sprintId: string): Promise<SprintAvailabilityEntry[] | null> {
+  const sprint = await getSprintById(sprintId);
   if (!sprint) {
     return null;
   }

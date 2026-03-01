@@ -47,9 +47,9 @@ async function createBaseSprint(): Promise<{ id: string }> {
 }
 
 describe('sprint availability controllers', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     process.env.JWT_SECRET = 'test-secret';
-    clearSprintStore();
+    await clearSprintStore();
   });
 
   it('allows doctor self-service availability updates', async () => {

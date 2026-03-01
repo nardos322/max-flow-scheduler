@@ -9,7 +9,7 @@ export function registerSucceededSprintRun(
   sprintId: string,
   inputSnapshot: SolveRequest,
   outputSnapshot: SolveResponse,
-): SprintRun {
+): Promise<SprintRun> {
   const run: SprintRun = {
     id: createRunId(),
     sprintId,
@@ -22,7 +22,12 @@ export function registerSucceededSprintRun(
   return appendSprintRun(run);
 }
 
-export function registerFailedSprintRun(sprintId: string, inputSnapshot: SolveRequest, code: string, message: string): SprintRun {
+export function registerFailedSprintRun(
+  sprintId: string,
+  inputSnapshot: SolveRequest,
+  code: string,
+  message: string,
+): Promise<SprintRun> {
   const run: SprintRun = {
     id: createRunId(),
     sprintId,
@@ -38,6 +43,6 @@ export function registerFailedSprintRun(sprintId: string, inputSnapshot: SolveRe
   return appendSprintRun(run);
 }
 
-export function getSprintRunHistory(sprintId: string): SprintRun[] {
+export function getSprintRunHistory(sprintId: string): Promise<SprintRun[]> {
   return listSprintRuns(sprintId);
 }

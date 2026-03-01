@@ -12,8 +12,8 @@ import {
 import { clearSprintStore } from '../src/services/sprint/sprint.repository.js';
 
 describe('sprint controllers', () => {
-  beforeEach(() => {
-    clearSprintStore();
+  beforeEach(async () => {
+    await clearSprintStore();
   });
 
   it('creates and fetches a sprint', async () => {
