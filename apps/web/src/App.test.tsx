@@ -22,6 +22,7 @@ describe('App', () => {
 
     expect(screen.getByRole('heading', { name: 'Sprint Run Console' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Ejecutar corrida' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Marcar ready-to-solve' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Guardar disponibilidad medico' })).toBeInTheDocument();
   });
 
@@ -31,11 +32,75 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Ejecutar corrida' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Cargar historial' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Cargar disponibilidad' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Marcar ready-to-solve' })).toBeDisabled();
   });
 
-  it('runs sprint solve and renders assignment rows by day', async () => {
+  it('marks sprint ready and runs sprint solve rendering assignment rows by day', async () => {
+    let sprintStatus: 'draft' | 'ready-to-solve' = 'draft';
+
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
       const url = String(input);
+
+      if (url.endsWith('/sprints/sprint-1') && init?.method === 'GET') {
+        return {
+          ok: true,
+          json: async () => ({
+            id: 'sprint-1',
+            name: 'Sprint 1',
+            periodId: 'p1',
+            status: sprintStatus,
+            globalConfig: {
+              requiredDoctorsPerShift: 1,
+              maxDaysPerDoctorDefault: 2,
+            },
+            doctorIds: ['d1'],
+            availability: [
+              {
+                doctorId: 'd1',
+                periodId: 'p1',
+                dayId: '2026-03-02',
+                source: 'doctor-self-service',
+                updatedByUserId: 'd1',
+                updatedByRole: 'doctor',
+                updatedAt: '2026-03-01T09:30:00.000Z',
+              },
+            ],
+            createdAt: '2026-03-01T09:00:00.000Z',
+            updatedAt: '2026-03-01T09:30:00.000Z',
+          }),
+        } as Response;
+      }
+
+      if (url.endsWith('/sprints/sprint-1/status') && init?.method === 'PATCH') {
+        sprintStatus = 'ready-to-solve';
+        return {
+          ok: true,
+          json: async () => ({
+            id: 'sprint-1',
+            name: 'Sprint 1',
+            periodId: 'p1',
+            status: 'ready-to-solve',
+            globalConfig: {
+              requiredDoctorsPerShift: 1,
+              maxDaysPerDoctorDefault: 2,
+            },
+            doctorIds: ['d1'],
+            availability: [
+              {
+                doctorId: 'd1',
+                periodId: 'p1',
+                dayId: '2026-03-02',
+                source: 'doctor-self-service',
+                updatedByUserId: 'd1',
+                updatedByRole: 'doctor',
+                updatedAt: '2026-03-01T09:30:00.000Z',
+              },
+            ],
+            createdAt: '2026-03-01T09:00:00.000Z',
+            updatedAt: '2026-03-01T09:40:00.000Z',
+          }),
+        } as Response;
+      }
 
       if (url.endsWith('/sprints/sprint-1/runs') && init?.method === 'POST') {
         return {
@@ -98,26 +163,18 @@ describe('App', () => {
       if (url.endsWith('/sprints/sprint-1/availability') && init?.method === 'GET') {
         return {
           ok: true,
-          json: async () => ({ items: [] }),
-        } as Response;
-      }
-
-      if (url.endsWith('/sprints/sprint-1') && init?.method === 'GET') {
-        return {
-          ok: true,
           json: async () => ({
-            id: 'sprint-1',
-            name: 'Sprint 1',
-            periodId: 'p1',
-            status: 'draft',
-            globalConfig: {
-              requiredDoctorsPerShift: 1,
-              maxDaysPerDoctorDefault: 2,
-            },
-            doctorIds: ['d1'],
-            availability: [],
-            createdAt: '2026-03-01T09:00:00.000Z',
-            updatedAt: '2026-03-01T09:00:00.000Z',
+            items: [
+              {
+                doctorId: 'd1',
+                periodId: 'p1',
+                dayId: '2026-03-02',
+                source: 'doctor-self-service',
+                updatedByUserId: 'd1',
+                updatedByRole: 'doctor',
+                updatedAt: '2026-03-01T09:30:00.000Z',
+              },
+            ],
           }),
         } as Response;
       }
@@ -128,6 +185,21 @@ describe('App', () => {
     renderApp();
 
     fireEvent.change(screen.getByLabelText('Sprint ID'), { target: { value: 'sprint-1' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Cargar sprint' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Marcar ready-to-solve' })).toBeEnabled();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Marcar ready-to-solve' }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/sprints/sprint-1/status'),
+        expect.objectContaining({ method: 'PATCH' }),
+      );
+    });
+
     fireEvent.click(screen.getByRole('button', { name: 'Ejecutar corrida' }));
 
     await waitFor(() => {
@@ -138,8 +210,8 @@ describe('App', () => {
     });
 
     expect(screen.getByText('Resultado de la ultima corrida (succeeded)')).toBeInTheDocument();
-    expect(screen.getByText('2026-03-02')).toBeInTheDocument();
-    expect(screen.getByText('d1')).toBeInTheDocument();
+    expect(screen.getAllByText('2026-03-02').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('d1').length).toBeGreaterThan(0);
   }, 10000);
 
   it('saves doctor self-service availability and refreshes table', async () => {

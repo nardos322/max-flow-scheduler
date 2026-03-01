@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { CheckCircle2, Play, RefreshCcw, Shield, TriangleAlert, UserRoundCog, Users } from 'lucide-react';
 import {
+  markSprintReadyRequestSchema,
   plannerOverrideAvailabilityRequestSchema,
   setDoctorAvailabilityRequestSchema,
   solveResponseSchema,
@@ -167,6 +168,22 @@ async function setPlannerOverrideAvailability(params: {
   return sprintSchema.parse(json);
 }
 
+async function markSprintReady(sprintId: string, token: string) {
+  const payload = markSprintReadyRequestSchema.parse({ status: 'ready-to-solve' });
+  const response = await fetch(`${apiBaseUrl}/sprints/${encodeURIComponent(sprintId)}/status`, {
+    method: 'PATCH',
+    headers: buildHeaders(token),
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseApiError(response));
+  }
+
+  const json = (await response.json()) as unknown;
+  return sprintSchema.parse(json);
+}
+
 function formatIso(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) {
@@ -252,6 +269,13 @@ export function App() {
     },
   });
 
+  const markReadyMutation = useMutation({
+    mutationFn: () => markSprintReady(sprintId, token),
+    onSuccess: async () => {
+      await Promise.all([sprintQuery.refetch(), availabilityQuery.refetch(), historyQuery.refetch()]);
+    },
+  });
+
   const latestResult = solveMutation.data?.result;
 
   const assignmentsByDay = useMemo(() => {
@@ -277,9 +301,16 @@ export function App() {
     (sprintQuery.error as Error | null)?.message ??
     (availabilityQuery.error as Error | null)?.message ??
     (setDoctorAvailabilityMutation.error as Error | null)?.message ??
-    (setOverrideAvailabilityMutation.error as Error | null)?.message;
+    (setOverrideAvailabilityMutation.error as Error | null)?.message ??
+    (markReadyMutation.error as Error | null)?.message;
 
-  const canRun = sprintId.trim().length > 0;
+  const hasSprintLoaded = Boolean(sprintQuery.data);
+  const hasAvailability =
+    (availabilityQuery.data?.items.length ?? 0) > 0 || (sprintQuery.data?.availability.length ?? 0) > 0;
+  const isReadyToRun = sprintQuery.data?.status === 'ready-to-solve' || sprintQuery.data?.status === 'solved';
+
+  const canRun = sprintId.trim().length > 0 && hasSprintLoaded && isReadyToRun;
+  const canMarkReady = sprintId.trim().length > 0 && hasSprintLoaded && !isReadyToRun && !markReadyMutation.isPending;
   const canSetDoctorAvailability =
     sprintId.trim().length > 0 && doctorId.trim().length > 0 && doctorPeriodId.trim().length > 0;
   const canSetOverrideAvailability =
@@ -296,7 +327,7 @@ export function App() {
         </Card>
 
         <Card className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-[1fr_2fr_auto_auto_auto] md:items-end">
+          <div className="grid gap-3 md:grid-cols-[1fr_2fr_auto_auto_auto_auto] md:items-end">
             <label className="text-sm text-slate-700">
               Sprint ID
               <input
@@ -322,7 +353,7 @@ export function App() {
             <Button
               variant="outline"
               onClick={() => sprintQuery.refetch()}
-              disabled={!canRun || sprintQuery.isFetching}
+              disabled={sprintId.trim().length === 0 || sprintQuery.isFetching}
               aria-label="Cargar sprint"
             >
               <Users className="mr-2 h-4 w-4" /> Sprint
@@ -331,16 +362,36 @@ export function App() {
             <Button
               variant="outline"
               onClick={() => availabilityQuery.refetch()}
-              disabled={!canRun || availabilityQuery.isFetching}
+              disabled={sprintId.trim().length === 0 || availabilityQuery.isFetching}
               aria-label="Cargar disponibilidad"
             >
               <RefreshCcw className="mr-2 h-4 w-4" /> Disponibilidad
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => markReadyMutation.mutate()}
+              disabled={!canMarkReady || !hasAvailability}
+              aria-label="Marcar ready-to-solve"
+            >
+              {markReadyMutation.isPending ? 'Marcando...' : 'Marcar ready-to-solve'}
             </Button>
 
             <Button onClick={() => solveMutation.mutate()} disabled={!canRun || solveMutation.isPending} aria-label="Ejecutar corrida">
               <Play className="mr-2 h-4 w-4" />
               {solveMutation.isPending ? 'Ejecutando...' : 'Ejecutar corrida'}
             </Button>
+          </div>
+
+          <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
+            <p className="font-semibold uppercase tracking-wide">Flujo recomendado</p>
+            <p className="mt-1">1) Cargar sprint 2) Cargar disponibilidad 3) Marcar ready-to-solve 4) Ejecutar corrida.</p>
+            {!hasSprintLoaded ? <p className="mt-1">Estado: falta cargar sprint.</p> : null}
+            {hasSprintLoaded && !hasAvailability ? <p className="mt-1">Estado: falta disponibilidad para marcar ready.</p> : null}
+            {hasSprintLoaded && hasAvailability && !isReadyToRun ? (
+              <p className="mt-1">Estado: sprint listo para marcar ready-to-solve.</p>
+            ) : null}
+            {hasSprintLoaded && isReadyToRun ? <p className="mt-1">Estado: sprint listo para ejecutar.</p> : null}
           </div>
 
           {token.trim().length === 0 ? (
@@ -547,7 +598,7 @@ export function App() {
             <Button
               variant="outline"
               onClick={() => historyQuery.refetch()}
-              disabled={!canRun || historyQuery.isFetching}
+              disabled={sprintId.trim().length === 0 || historyQuery.isFetching}
               aria-label="Cargar historial"
             >
               <RefreshCcw className="mr-2 h-4 w-4" /> Historial
