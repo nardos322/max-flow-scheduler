@@ -9,6 +9,7 @@
     "lint": "eslint src tests --max-warnings=0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
+    "test:prisma:sprint": "rm -f test-prisma.db test-prisma.db-journal && SPRINT_REPOSITORY_DRIVER=prisma DATABASE_URL=file:./test-prisma.db prisma migrate deploy --schema prisma/schema.prisma && SPRINT_REPOSITORY_DRIVER=prisma DATABASE_URL=file:./test-prisma.db vitest run --maxWorkers=1 tests/sprint.test.ts tests/sprint-availability.test.ts tests/sprint-runs.test.ts",
     "format": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\"",
     "db:generate": "prisma generate --schema prisma/schema.prisma",
     "db:migrate": "prisma migrate dev --schema prisma/schema.prisma",
@@ -16,6 +17,8 @@
     "db:studio": "prisma studio --schema prisma/schema.prisma"
   },
   "dependencies": {
+    "@libsql/client": "^0.17.0",
+    "@prisma/adapter-libsql": "^7.4.2",
     "@prisma/client": "^7.4.2",
     "@scheduler/domain": "workspace:*",
     "dotenv": "^17.3.1",

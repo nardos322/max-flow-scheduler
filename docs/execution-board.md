@@ -14,18 +14,17 @@ _Ultima actualizacion manual: 2026-03-01 (alineado con evidencia en codigo/repos
 - Tareas frontend que quedan en espera por esta decision: `T-502.1`, `T-502.2`, `T-502.3`, `T-552.1`, `T-552.2`, `T-553.3`.
 
 ### Cola activa backend-only
-1. `T-104.4` Ajustar tests backend para DB SQLite deterministica (sin romper CI).
-2. `T-201.3` Validar compatibilidad multi-modulo.
-3. `T-202.1` Crear fixtures happy/edge/invalid.
-4. `T-202.2` Definir expected outcomes por fixture.
-5. `T-301.3` Revisar formalmente el modelo implementado.
-6. `T-601.1` Headers, rate-limit, body limits, sanitizacion de errores.
-7. `T-601.2` Secret scanning y politica de secretos.
-8. `T-602.1` Ejecutar benchmark matrix final.
-9. `T-602.2` Definir budgets y alarmas de regresion.
-10. `T-603.1` Dockerizar API/engine.
-11. `T-603.2` Pipeline de release + rollback.
-12. `T-603.3` Runbook/ADR/changelog tecnico.
+1. `T-201.3` Validar compatibilidad multi-modulo.
+2. `T-202.1` Crear fixtures happy/edge/invalid.
+3. `T-202.2` Definir expected outcomes por fixture.
+4. `T-301.3` Revisar formalmente el modelo implementado.
+5. `T-601.1` Headers, rate-limit, body limits, sanitizacion de errores.
+6. `T-601.2` Secret scanning y politica de secretos.
+7. `T-602.1` Ejecutar benchmark matrix final.
+8. `T-602.2` Definir budgets y alarmas de regresion.
+9. `T-603.1` Dockerizar API/engine.
+10. `T-603.2` Pipeline de release + rollback.
+11. `T-603.3` Runbook/ADR/changelog tecnico.
 
 ## EPIC E1 - Foundation Monorepo (Semanas 1-2)
 ### US-101 Definir arquitectura y alcance (P0, 5)
@@ -53,15 +52,14 @@ _Ultima actualizacion manual: 2026-03-01 (alineado con evidencia en codigo/repos
   - CI verde en rama principal
 
 ### US-104 Persistencia backend con Prisma/SQLite (P0, 8)
-- T-104.1 Introducir Prisma + SQLite en `apps/api` (schema, client, scripts). Owner: `repo-bootstrap`. Estado: `in-progress`
+- T-104.1 Introducir Prisma + SQLite en `apps/api` (schema, client, scripts). Owner: `repo-bootstrap`. Estado: `done`
 - T-104.2 Modelar entidades de planificacion persistentes (`Sprint`, `SprintDoctor`, `SprintAvailability`, `SprintRun`). Owner: `api-contracts`. Estado: `done`
 - T-104.3 Migrar repositorios de sprint/runs a Prisma sin romper contratos API. Owner: `integration-orchestrator`. Estado: `done`
-- T-104.4 Adaptar tests backend a DB SQLite deterministica. Owner: `qa-reliability`. Estado: `in-progress`
+- T-104.4 Adaptar tests backend a DB SQLite deterministica. Owner: `qa-reliability`. Estado: `done`
 - Done cuando:
   - API de sprints ya no depende de store `in-memory/json` como mecanismo principal
   - Migraciones versionadas y ejecutables en CI/local
   - Suite backend verde con persistencia real
-  - Bloqueador actual: entorno sin acceso de red a `binaries.prisma.sh` impide `db:generate` y `db:migrate`
 
 ## EPIC E2 - Dominio y Contratos (Semana 3)
 ### US-201 Contratos Zod compartidos (P0, 8)

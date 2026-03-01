@@ -26,12 +26,14 @@ Monorepo para planificacion de medicos en vacaciones usando un solver de max-flo
 
 ## Bootstrap de base de datos (API)
 - Prisma schema: `apps/api/prisma/schema.prisma`
+- Prisma config: `apps/api/prisma.config.ts`
 - Cliente Prisma: `apps/api/src/lib/prisma.ts`
 - Scripts:
   - `pnpm --filter @scheduler/api run db:generate`
   - `pnpm --filter @scheduler/api run db:migrate -- --name init`
   - `pnpm --filter @scheduler/api run db:migrate:deploy`
   - `pnpm --filter @scheduler/api run db:studio`
+  - `pnpm --filter @scheduler/api run test:prisma:sprint`
 - Ejemplo local de URL SQLite:
   - `DATABASE_URL="file:./dev.db"`
 

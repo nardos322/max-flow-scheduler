@@ -8,6 +8,8 @@ build
 .vscode
 .env
 .env.*
+*.db
+*.db-journal
 apps/*/dist
 services/engine-cpp/build
 services/engine-cpp/build-fetch
